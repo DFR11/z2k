@@ -153,10 +153,55 @@ create_official_config() {
         print_info "Модули валидации не найдены, пропускаем проверку"
     fi
 
+    z2k_have_cmd() { command -v "$1" >/dev/null 2>&1; }
+
     # Получить FWTYPE и FLOWOFFLOAD из окружения (если установлены)
     local fwtype_value="${FWTYPE:-iptables}"
     local flowoffload_value="${FLOWOFFLOAD:-none}"
     local tmpdir_value="${TMPDIR:-}"
+
+    # ==============================================================================
+    # IPv6 auto-detect (Keenetic)
+    # ==============================================================================
+    # Default behavior historically was DISABLE_IPV6=1 because many Keenetic builds
+    # don't ship ip6tables. Here we enable IPv6 only if:
+    # - IPv6 looks configured (default route or global address exists)
+    # - and the firewall backend can actually handle IPv6 rules:
+    #   - iptables => ip6tables must exist
+    #   - nftables => nft must exist
+    local disable_ipv6_value="${DISABLE_IPV6:-}"
+    if [ -z "$disable_ipv6_value" ]; then
+        disable_ipv6_value="1"
+        local v6_ok="0"
+        if z2k_have_cmd ip; then
+            ip -6 route show default 2>/dev/null | grep -q . && v6_ok="1"
+            if [ "$v6_ok" = "0" ]; then
+                ip -6 addr show scope global 2>/dev/null | grep -q "inet6" && v6_ok="1"
+            fi
+        fi
+
+        if [ "$v6_ok" = "1" ]; then
+            if [ "$fwtype_value" = "nftables" ]; then
+                if z2k_have_cmd nft; then
+                    disable_ipv6_value="0"
+                    print_info "IPv6 обнаружен, backend=nftables: включаем обработку IPv6 (DISABLE_IPV6=0)"
+                else
+                    print_info "IPv6 обнаружен, но nft не найден: оставляем IPv6 отключенным (DISABLE_IPV6=1)"
+                fi
+            else
+                if z2k_have_cmd ip6tables; then
+                    disable_ipv6_value="0"
+                    print_info "IPv6 обнаружен, backend=iptables: включаем обработку IPv6 (DISABLE_IPV6=0)"
+                else
+                    print_info "IPv6 обнаружен, но ip6tables не найден: оставляем IPv6 отключенным (DISABLE_IPV6=1)"
+                fi
+            fi
+        else
+            print_info "IPv6 не обнаружен (нет default route/global addr): оставляем IPv6 отключенным (DISABLE_IPV6=1)"
+        fi
+    else
+        print_info "DISABLE_IPV6 задан вручную: DISABLE_IPV6=$disable_ipv6_value"
+    fi
 
     # Создать полный config файл
     cat > "$config_file" <<CONFIG
@@ -239,10 +284,6 @@ FLOWOFFLOAD=$flowoffload_value
 # WAN interface override (space/comma separated). Empty = auto-detect
 #WAN_IFACE=
 
-# Disable IPv6 processing (0=enabled, 1=disabled)
-# По умолчанию отключен для Keenetic (большинство роутеров не используют IPv6)
-DISABLE_IPV6=1
-
 # ==============================================================================
 # SYSTEM SETTINGS
 # ==============================================================================
@@ -257,6 +298,12 @@ CONFIG
     else
         echo "#TMPDIR=/opt/zapret2/tmp" >> "$config_file"
     fi
+
+    # Disable IPv6 processing (0=enabled, 1=disabled)
+    # Auto-detected during install; can be overridden by setting DISABLE_IPV6 in environment/config.
+    echo "" >> "$config_file"
+    echo "# Disable IPv6 processing (0=enabled, 1=disabled)" >> "$config_file"
+    echo "DISABLE_IPV6=$disable_ipv6_value" >> "$config_file"
 
     cat >> "$config_file" <<'CONFIG'
 
