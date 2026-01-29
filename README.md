@@ -2,6 +2,11 @@
 
 Проект в активной разработке. Статус: alpha test. Возможны баги и изменения без обратной совместимости.
 
+Поддержать проект:
+
+- TON: `UQA6Y6Mf1Qge2dVSl3_vSqb29SKrhI8VgJtoRBjgp08oB8QY`
+- USDT (ERC20): `0xA1D6d7d339f05C1560ecAF0c5CB8c4dc80Dc46A9`
+
 Если нужно максимально простое и проверенное решение, посмотрите также: https://github.com/IndeecFOX/zapret4rocket
 
 ---
@@ -107,4 +112,3 @@ curl -fsSL https://raw.githubusercontent.com/necronicle/z2k/test/z2k.sh | sh
 ## Лицензия
 
 MIT
-
