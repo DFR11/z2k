@@ -114,6 +114,10 @@ LUA_AUTO="$ZAPRET_BASE/lua/zapret-auto.lua"
 [ -f "$LUA_AUTO" ] || LUA_AUTO="$LUA_AUTO.gz"
 [ -f "$LUA_AUTO" ] && LUAOPT="$LUAOPT --lua-init=@$LUA_AUTO"
 NFQWS2_OPT_BASE="$USEROPT --fwmark=$DESYNC_MARK $LUAOPT"
+
+# Load custom TLS ClientHello blob for strategies (manual: --blob is engine init option).
+TLS_MAX_RU_BLOB="$ZAPRET_BASE/files/fake/tls_clienthello_max_ru.bin"
+[ -s "$TLS_MAX_RU_BLOB" ] && NFQWS2_OPT_BASE="$NFQWS2_OPT_BASE --blob=tls_max_ru:@$TLS_MAX_RU_BLOB"
 LISTS_DIR="$ZAPRET_BASE/lists"
 EXTRA_STRATS_DIR="$ZAPRET_BASE/extra_strats"
 CONFIG_DIR="/opt/etc/zapret2"
