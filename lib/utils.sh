@@ -1,33 +1,33 @@
 #!/bin/sh
-# lib/utils.sh - Утилиты, проверки и константы для z2k
-# Часть z2k v2.0 - Модульный установщик zapret2 для Keenetic
+# lib/utils.sh - Utilities, checks and constants for z2k
+# Part z2k v2.0 - Modular installer zapret2 for Keenetic
 
 # ==============================================================================
-# КОНСТАНТЫ
+# CONSTANTS
 # ==============================================================================
 
-# Версия z2k
+# Version z2k
 Z2K_VERSION="2.0.0"
 
-# Пути установки
+# Installation paths
 ZAPRET2_DIR="/opt/zapret2"
 CONFIG_DIR="/opt/etc/zapret2"
 LISTS_DIR="${ZAPRET2_DIR}/lists"
 
-# Z2K-специфичная переменная для init скрипта (не конфликтует с zapret2)
+# Z2K-specific variable for init script (does not conflict with zapret2)
 Z2K_INIT_SCRIPT="/opt/etc/init.d/S99zapret2"
 
-# Обратная совместимость (может перезаписываться модулями zapret2)
+# Backwards compatible (can be overwritten by zapret2 modules)
 INIT_SCRIPT="/opt/etc/init.d/S99zapret2"
 
-# Экспортировать для использования в функциях
+# Export for use in functions
 export ZAPRET2_DIR
 export CONFIG_DIR
 export LISTS_DIR
 export Z2K_INIT_SCRIPT
 export INIT_SCRIPT
 
-# Рабочая директория
+# Working directory
 WORK_DIR="/tmp/z2k"
 LIB_DIR="${WORK_DIR}/lib"
 
@@ -36,7 +36,7 @@ GITHUB_RAW="https://raw.githubusercontent.com/necronicle/z2k/master"
 Z4R_BASE_URL="https://raw.githubusercontent.com/IndeecFOX/zapret4rocket/master"
 Z4R_LISTS_URL="${Z4R_BASE_URL}/lists"
 
-# Файлы конфигурации
+# Configuration files
 STRATEGIES_CONF="${CONFIG_DIR}/strategies.conf"
 HTTP_STRATEGIES_CONF="${CONFIG_DIR}/http_strategies.conf"
 CURRENT_STRATEGY_FILE="${CONFIG_DIR}/current_strategy"
@@ -44,7 +44,7 @@ QUIC_STRATEGIES_CONF="${CONFIG_DIR}/quic_strategies.conf"
 QUIC_STRATEGY_FILE="${CONFIG_DIR}/quic_strategy.conf"
 RUTRACKER_QUIC_STRATEGY_FILE="${CONFIG_DIR}/rutracker_quic_strategy.conf"
 
-# Цвета для вывода (если терминал поддерживает)
+# Output colors (if terminal supports)
 if [ -t 1 ]; then
     COLOR_RED='\033[0;31m'
     COLOR_GREEN='\033[0;32m'
@@ -60,7 +60,7 @@ else
 fi
 
 # ==============================================================================
-# ФУНКЦИИ ВЫВОДА
+# OUTPUT FUNCTIONS
 # ==============================================================================
 
 print_success() {
@@ -90,36 +90,36 @@ print_separator() {
 }
 
 # ==============================================================================
-# ПРОВЕРКИ СИСТЕМЫ
+# SYSTEM CHECKS
 # ==============================================================================
 
-# Проверка наличия Entware
+# Entware Availability Check
 check_entware() {
     if [ ! -d "/opt" ] || [ ! -x "/opt/bin/opkg" ]; then
-        print_error "Entware не установлен!"
-        print_info "Установите Entware перед запуском z2k"
+        print_error "Entware is not installed!"
+        print_info "Install Entware before starting z2k"
         print_info "Инструкция: https://help.keenetic.com/hc/ru/articles/360021888880"
         return 1
     fi
     return 0
 }
 
-# Проверка прав root
+# Checking for root
 check_root() {
     if [ "$(id -u)" -ne 0 ]; then
-        print_error "Требуются права root для установки"
-        print_info "Запустите: sudo sh z2k.sh"
+        print_error "Requires root permissions for installation"
+        print_info "Run: sudo sh z2k.sh"
         return 1
     fi
     return 0
 }
 
-# Получить архитектуру системы
+# Get system architecture
 get_arch() {
     uname -m
 }
 
-# Проверка архитектуры (только ARM64 для Keenetic)
+# Architecture check (ARM64 only for Keenetic)
 check_arch() {
     local arch
     arch=$(get_arch)
@@ -129,9 +129,9 @@ check_arch() {
             return 0
             ;;
         *)
-            print_warning "Архитектура $arch не протестирована"
-            print_warning "z2k предназначен для ARM64 Keenetic роутеров"
-            printf "Продолжить? [y/N]: "
+            print_warning "$arch architecture not tested"
+            print_warning "z2k is designed for ARM64 Keenetic routers"
+            printf "Continue? [y/N]:"
             read -r answer </dev/tty
             [ "$answer" = "y" ] || return 1
             ;;
@@ -139,39 +139,39 @@ check_arch() {
     return 0
 }
 
-# Проверка свободного места на диске
+# Checking free disk space
 check_disk_space() {
     local required_mb=50
     local available_mb
 
-    # Получить свободное место в /opt (в MB)
+    # Get free space in /opt (in MB)
     available_mb=$(df -m /opt 2>/dev/null | awk 'NR==2 {print $4}')
 
     if [ -z "$available_mb" ]; then
-        print_warning "Не удалось определить свободное место"
+        print_warning "Unable to determine free space"
         return 0
     fi
 
     if [ "$available_mb" -lt "$required_mb" ]; then
-        print_error "Недостаточно места в /opt"
-        print_info "Требуется: ${required_mb}MB, доступно: ${available_mb}MB"
+        print_error "Not enough space in /opt"
+        print_info "Required: ${required_mb}MB, available: ${available_mb}MB"
         return 1
     fi
 
     return 0
 }
 
-# Проверка наличия curl
+# Checking for curl
 check_curl() {
     if ! command -v curl >/dev/null 2>&1; then
-        print_error "curl не установлен"
-        print_info "Установка curl..."
+        print_error "curl is not installed"
+        print_info "Installing curl..."
         opkg update && opkg install curl || return 1
     fi
     return 0
 }
 
-# Проверка наличия необходимых утилит
+# Checking the presence of necessary utilities
 check_required_tools() {
     local missing_tools=""
 
@@ -182,19 +182,19 @@ check_required_tools() {
     done
 
     if [ -n "$missing_tools" ]; then
-        print_error "Отсутствуют утилиты:$missing_tools"
+        print_error "Missing utilities: $missing_tools"
         return 1
     fi
 
     return 0
 }
 
-# Проверка, установлен ли zapret2
+# Checking if zapret2 is installed
 is_zapret2_installed() {
     [ -d "$ZAPRET2_DIR" ] && [ -x "${ZAPRET2_DIR}/nfq2/nfqws2" ]
 }
 
-# Проверка, запущен ли сервис zapret2
+# Checking whether the zapret2 service is running
 is_zapret2_running() {
     if [ -f "$INIT_SCRIPT" ]; then
         pgrep -f "nfqws2" >/dev/null 2>&1
@@ -203,57 +203,57 @@ is_zapret2_running() {
     fi
 }
 
-# Получить статус сервиса
+# Get service status
 get_service_status() {
     if is_zapret2_running; then
-        echo "Активен"
+        echo "Active"
     elif is_zapret2_installed; then
-        echo "Остановлен"
+        echo "Stopped"
     else
-        echo "Не установлен"
+        echo "Not installed"
     fi
 }
 
-# Получить текущую стратегию
+# Get current strategy
 get_current_strategy() {
     if [ -f "$CURRENT_STRATEGY_FILE" ]; then
         . "$CURRENT_STRATEGY_FILE"
         echo "$CURRENT_STRATEGY"
     else
-        echo "не задана"
+        echo "not specified"
     fi
 }
 
 # ==============================================================================
-# ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
+# AUXILIARY FUNCTIONS
 # ==============================================================================
 
-# Скачать файл с проверкой
+# Download the file with verification
 download_file() {
     local url=$1
     local output=$2
-    local description=${3:-"Загрузка файла"}
+    local description=${3:-"Downloading the file"}
 
     print_info "$description..."
 
     if curl -fsSL "$url" -o "$output"; then
-        print_success "Загружено: $output"
+        print_success "Loaded: $output"
         return 0
     else
-        print_error "Ошибка загрузки: $url"
+        print_error "Load Error: $url"
         return 1
     fi
 }
 
-# Создать резервную копию файла
+# Create a backup copy of the file
 backup_file() {
     local file=$1
     local backup="${file}.backup.$(date +%Y%m%d_%H%M%S)"
-    local max_backups=5  # Хранить только последние 5 бэкапов
+    local max_backups=5  # Store only the last 5 backups
 
     if [ -f "$file" ]; then
-        # Очистить старые бэкапы, оставив только последние (max_backups - 1)
-        # -1 потому что сейчас создадим еще один
+        # Clear old backups, leaving only the latest ones (max_backups - 1)
+        # -1 because now we will create another one
         local old_backups
         old_backups=$(ls -t "${file}.backup."* 2>/dev/null | tail -n +${max_backups})
         if [ -n "$old_backups" ]; then
@@ -262,41 +262,41 @@ backup_file() {
             done
         fi
 
-        # Создать новый бэкап
+        # Create a new backup
         cp "$file" "$backup" || return 1
-        print_info "Резервная копия: $backup"
+        print_info "Backup: $backup"
     fi
     return 0
 }
 
-# Восстановить из резервной копии
+# Restore from backup
 restore_backup() {
     local file=$1
     local backup
 
-    # Найти последний backup
+    # Find the latest backup
     backup=$(ls -t "${file}.backup."* 2>/dev/null | head -n 1)
 
     if [ -n "$backup" ] && [ -f "$backup" ]; then
         cp "$backup" "$file" || return 1
-        print_success "Восстановлено из: $backup"
+        print_success "Restored from: $backup"
         return 0
     else
-        print_error "Резервная копия не найдена"
+        print_error "Backup not found"
         return 1
     fi
 }
 
-# Очистить старые бэкапы для файла
+# Clear old backups for a file
 cleanup_backups() {
     local file=$1
-    local keep=${2:-5}  # По умолчанию хранить 5 последних
+    local keep=${2:-5}  # By default, store the last 5
 
     local all_backups
     all_backups=$(ls -t "${file}.backup."* 2>/dev/null)
 
     if [ -z "$all_backups" ]; then
-        print_info "Бэкапы не найдены для $file"
+        print_info "No backups found for $file"
         return 0
     fi
 
@@ -304,7 +304,7 @@ cleanup_backups() {
     total_count=$(echo "$all_backups" | wc -l)
 
     if [ "$total_count" -le "$keep" ]; then
-        print_info "Бэкапов: $total_count (в пределах нормы)"
+        print_info "Backups: $total_count (within normal limits)"
         return 0
     fi
 
@@ -317,25 +317,25 @@ cleanup_backups() {
     done
 
     local remaining=$keep
-    print_success "Очищено бэкапов: $((total_count - remaining)), осталось: $remaining"
+    print_success "Backups cleared: $((total_count - remaining)), remaining: $remaining"
     return 0
 }
 
-# Проверить бинарный файл
+# Check binary file
 verify_binary() {
     local binary=$1
 
     if [ ! -f "$binary" ]; then
-        print_error "Файл не найден: $binary"
+        print_error "File not found: $binary"
         return 1
     fi
 
     if [ ! -x "$binary" ]; then
-        print_error "Файл не исполняемый: $binary"
+        print_error "File not executable: $binary"
         return 1
     fi
 
-    # Попробовать запустить с --version
+    # Try running with --version
     local version_output
     version_output=$("$binary" --version 2>&1 | head -1)
 
@@ -343,11 +343,11 @@ verify_binary() {
         return 0
     fi
 
-    print_warning "Не удалось проверить бинарник: $binary"
+    print_warning "Failed to validate binary: $binary"
     return 0
 }
 
-# Проверка загрузки модуля ядра
+# Checking kernel module loading
 check_kernel_module() {
     local module=$1
 
@@ -358,38 +358,38 @@ check_kernel_module() {
     fi
 }
 
-# Загрузка модуля ядра
+# Loading a kernel module
 load_kernel_module() {
     local module=$1
 
     if check_kernel_module "$module"; then
-        print_info "Модуль $module уже загружен"
+        print_info "Module $module is already loaded"
         return 0
     fi
 
-    print_info "Загрузка модуля: $module"
+    print_info "Loading module: $module"
 
-    # На Keenetic нет системного modprobe, только Entware
+    # There is no system modprobe on Keenetic, only Entware
     # Используем /opt/sbin/insmod с полным путём к .ko файлу
     local kernel_ver
     kernel_ver=$(uname -r)
     local module_path="/lib/modules/${kernel_ver}/${module}.ko"
 
     if [ ! -f "$module_path" ]; then
-        print_error "Файл модуля не найден: $module_path"
+        print_error "Module file not found: $module_path"
         return 1
     fi
 
     if /opt/sbin/insmod "$module_path" 2>/dev/null; then
-        print_success "Модуль $module загружен"
+        print_success "Module $module loaded"
         return 0
     else
-        print_error "Ошибка загрузки модуля: $module"
+        print_error "Error loading module: $module"
         return 1
     fi
 }
 
-# Проверить доступность URL
+# Check URL availability
 check_url_accessible() {
     local url=$1
     local timeout=${2:-5}
@@ -401,7 +401,7 @@ check_url_accessible() {
     fi
 }
 
-# Получить версию nfqws2
+# Get nfqws2 version
 get_nfqws2_version() {
     local nfqws2="${ZAPRET2_DIR}/nfq2/nfqws2"
 
@@ -412,24 +412,24 @@ get_nfqws2_version() {
     fi
 }
 
-# Показать информацию о системе
+# Show system information
 show_system_info() {
-    print_header "Информация о системе"
+    print_header "System Information"
 
-    printf "%-20s: %s\n" "Архитектура" "$(get_arch)"
+    printf "%-20s: %s\n" "Architecture" "$(get_arch)"
     printf "%-20s: %s\n" "Entware" "$([ -d /opt ] && echo 'установлен' || echo 'не установлен')"
-    printf "%-20s: %s\n" "Свободное место" "$(df -h /opt 2>/dev/null | awk 'NR==2 {print $4}' || echo 'unknown')"
+    printf "%-20s: %s\n" "Free space" "$(df -h /opt 2>/dev/null | awk 'NR==2 {print $4}' || echo 'unknown')"
     printf "%-20s: %s\n" "zapret2" "$(is_zapret2_installed && echo 'установлен' || echo 'не установлен')"
-    printf "%-20s: %s\n" "nfqws2 версия" "$(get_nfqws2_version)"
-    printf "%-20s: %s\n" "Сервис" "$(get_service_status)"
-    printf "%-20s: %s\n" "Текущая стратегия" "#$(get_current_strategy)"
+    printf "%-20s: %s\n" "nfqws2 version" "$(get_nfqws2_version)"
+    printf "%-20s: %s\n" "Service" "$(get_service_status)"
+    printf "%-20s: %s\n" "Current strategy" "#$(get_current_strategy)"
 
     print_separator
 }
 
-# Запрос подтверждения у пользователя
+# Prompt user for confirmation
 confirm() {
-    local prompt=${1:-"Продолжить?"}
+    local prompt=${1:-"Continue?"}
     local default=${2:-"Y"}
 
     if [ "$default" = "Y" ]; then
@@ -452,14 +452,14 @@ confirm() {
     esac
 }
 
-# Пауза с сообщением
+# Pause with a message
 pause() {
-    local message=${1:-"Нажмите Enter для продолжения..."}
+    local message=${1:-"Press Enter to continue..."}
     printf "%s" "$message"
     read -r _ </dev/tty
 }
 
-# Очистить экран (если в интерактивном режиме)
+# Clear screen (if in interactive mode)
 clear_screen() {
     if [ -t 1 ]; then
         clear
@@ -467,51 +467,51 @@ clear_screen() {
 }
 
 # ==============================================================================
-# ИНИЦИАЛИЗАЦИЯ
+# INITIALIZATION
 # ==============================================================================
 
-# Создать рабочую директорию
+# Create working directory
 init_work_dir() {
     mkdir -p "$WORK_DIR" "$LIB_DIR" || {
-        print_error "Не удалось создать $WORK_DIR"
+        print_error "Failed to create $WORK_DIR"
         return 1
     }
     return 0
 }
 
-# Очистка рабочей директории
+# Clearing the working directory
 cleanup_work_dir() {
     if [ -d "$WORK_DIR" ]; then
         rm -rf "$WORK_DIR"
-        print_info "Рабочая директория очищена"
+        print_info "Working directory cleared"
     fi
 }
 
-# Обработчик ошибок
+# Error handler
 error_handler() {
     local exit_code=$1
     local line_no=$2
 
-    print_error "Ошибка в строке $line_no (код: $exit_code)"
+    print_error "Error in line $line_no (code: $exit_code)"
     cleanup_work_dir
     exit "$exit_code"
 }
 
-# Обработчик прерывания (Ctrl+C)
+# Interrupt handler (Ctrl+C)
 interrupt_handler() {
     printf "\n"
-    print_warning "Прервано пользователем"
+    print_warning "Aborted by user"
     cleanup_work_dir
     exit 130
 }
 
-# Установить обработчики сигналов
+# Install signal handlers
 setup_signal_handlers() {
     trap 'interrupt_handler' INT TERM
 }
 
 # ==============================================================================
-# ЭКСПОРТ ФУНКЦИЙ (для использования в других модулях)
+# EXPORTING FUNCTIONS (for use in other modules)
 # ==============================================================================
 
-# Все функции автоматически доступны после source этого файла
+# All functions are automatically available after the source of this file

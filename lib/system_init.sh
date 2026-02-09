@@ -1,32 +1,32 @@
 #!/bin/sh
-# lib/system_init.sh - Инициализация системных переменных для z2k
-# Заменяет вызов check_system() из zapret2/common/installer.sh
+# lib/system_init.sh - Initializing system variables for z2k
+# Replaces the check_system() call from zapret2/common/installer.sh
 
 # ==============================================================================
-# ОПРЕДЕЛЕНИЕ ТИПА СИСТЕМЫ
+# DETERMINING THE SYSTEM TYPE
 # ==============================================================================
 
 init_system_vars() {
-    print_info "Определение типа системы..."
+    print_info "Determining the type of system..."
 
-    # Определить OS
+    # Determine OS
     UNAME=$(uname -s)
 
-    # Определить подсистему
+    # Define subsystem
     SUBSYS=""
 
-    # Для Linux определить тип init системы
+    # For Linux, determine the init type of the system
     if [ "$UNAME" = "Linux" ]; then
-        # Проверить systemd
+        # Check systemd
         if command -v systemctl >/dev/null 2>&1 && systemctl --version >/dev/null 2>&1; then
             SYSTEM="systemd"
             SYSTEMCTL="systemctl"
             INIT="systemd"
-        # Проверить OpenRC
+        # Check OpenRC
         elif [ -f /sbin/openrc-run ] || [ -f /usr/sbin/openrc-run ]; then
             SYSTEM="openrc"
             INIT="openrc"
-        # Проверить OpenWrt/Keenetic (procd)
+        # Check OpenWrt/Keenetic (procd)
         elif [ -f /etc/openwrt_release ] || [ -f /opt/etc/init.d/rc.func ]; then
             SYSTEM="openwrt"
             INIT="procd"
@@ -36,33 +36,33 @@ init_system_vars() {
             INIT="sysv"
         fi
 
-        print_success "Система: $SYSTEM (init: $INIT)"
+        print_success "System: $SYSTEM (init: $INIT)"
 
     elif [ "$UNAME" = "FreeBSD" ] || [ "$UNAME" = "OpenBSD" ]; then
         SYSTEM="bsd"
         INIT="rc"
-        print_success "Система: BSD"
+        print_success "System: BSD"
 
     elif [ "$UNAME" = "Darwin" ]; then
         SYSTEM="macos"
         INIT="launchd"
-        print_success "Система: macOS"
+        print_success "System: macOS"
 
     else
-        print_warning "Неизвестная система: $UNAME"
+        print_warning "Unknown system: $UNAME"
         SYSTEM="unknown"
         INIT="unknown"
     fi
 
-    # Экспортировать переменные для использования в других модулях
+    # Export variables for use in other modules
     export SYSTEM
     export SUBSYS
     export UNAME
     export INIT
     export SYSTEMCTL
 
-    # Показать детали
-    print_info "Переменные окружения:"
+    # Show details
+    print_info "Environment Variables:"
     print_info "  SYSTEM=$SYSTEM"
     print_info "  UNAME=$UNAME"
     print_info "  INIT=$INIT"
@@ -72,21 +72,21 @@ init_system_vars() {
 }
 
 # ==============================================================================
-# ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
+# AUXILIARY FUNCTIONS
 # ==============================================================================
 
-# Определить является ли система Keenetic
+# Determine whether the Keenetic system is
 is_keenetic() {
-    # Проверка наличия Keenetic-специфичных файлов
+    # Checking for Keenetic-specific files
     [ -f /opt/etc/init.d/rc.func ] && return 0
 
-    # Проверка на NDM (Keenetic firmware)
+    # Checking for NDM (Keenetic firmware)
     [ -d /opt/etc/ndm ] && return 0
 
     return 1
 }
 
-# Получить версию Keenetic firmware (если доступно)
+# Get the Keenetic firmware version (if available)
 get_keenetic_version() {
     if [ -f /etc/os-release ]; then
         grep VERSION_ID /etc/os-release | cut -d'=' -f2 | tr -d '"'
@@ -98,23 +98,23 @@ get_keenetic_version() {
 }
 
 # ==============================================================================
-# KEENETIC СПЕЦИФИЧНЫЕ ПРОВЕРКИ
+# KEENETIC SPECIFIC CHECKS
 # ==============================================================================
 
 check_keenetic_specifics() {
     if is_keenetic; then
-        print_info "Обнаружен роутер Keenetic"
+        print_info "Keenetic router detected"
 
         local fw_version
         fw_version=$(get_keenetic_version)
-        [ "$fw_version" != "unknown" ] && print_info "Firmware версия: $fw_version"
+        [ "$fw_version" != "unknown" ] && print_info "Firmware version: $fw_version"
 
-        # Проверить наличие NDM hooks
+        # Check availability of NDM hooks
         if [ -d /opt/etc/ndm ]; then
-            print_info "NDM hooks доступны"
+            print_info "NDM hooks available"
         fi
 
-        # Проверить fastnat
+        # Check fastnat
         if [ -f /sys/kernel/fastnat/mode ]; then
             local fastnat_mode
             fastnat_mode=$(cat /sys/kernel/fastnat/mode 2>/dev/null || echo "unknown")

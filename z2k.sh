@@ -1,12 +1,12 @@
 #!/bin/sh
-# z2k.sh - Bootstrap скрипт для z2k v2.0
-# Модульный установщик zapret2 для роутеров Keenetic
+# z2k.sh - Bootstrap script for z2k v2.0
+# Modular installer zapret2 for Keenetic routers
 # https://github.com/necronicle/z2k
 
 set -e
 
 # ==============================================================================
-# КОНСТАНТЫ
+# CONSTANTS
 # ==============================================================================
 
 Z2K_VERSION="2.0.0"
@@ -14,18 +14,18 @@ WORK_DIR="/tmp/z2k"
 LIB_DIR="${WORK_DIR}/lib"
 GITHUB_RAW="https://raw.githubusercontent.com/necronicle/z2k/master"
 
-# Экспортировать переменные для использования в функциях
+# Export variables for use in functions
 export WORK_DIR
 export LIB_DIR
 export GITHUB_RAW
 
-# Список модулей для загрузки
+# List of modules to download
 MODULES="utils system_init install strategies config config_official menu discord"
 
 # ==============================================================================
-# ВСТРОЕННЫЕ FALLBACK ФУНКЦИИ
+# BUILT-IN FALLBACK FUNCTIONS
 # ==============================================================================
-# Минимальные функции для работы до загрузки модулей
+# Minimum functions to work before loading modules
 
 print_info() {
     printf "[i] %s\n" "$1"
@@ -61,7 +61,7 @@ print_separator() {
 }
 
 confirm() {
-    local prompt=${1:-"Продолжить?"}
+    local prompt=${1:-"Continue?"}
     local default=${2:-"Y"}
 
     if [ "$default" = "Y" ]; then
@@ -85,87 +85,87 @@ confirm() {
 }
 
 # ==============================================================================
-# ПРОВЕРКИ ОКРУЖЕНИЯ
+# ENVIRONMENT CHECKS
 # ==============================================================================
 
 check_environment() {
-    print_info "Проверка окружения..."
+    print_info "Checking the environment..."
 
-    # Проверка Entware
+    # Entware check
     if [ ! -d "/opt" ] || [ ! -x "/opt/bin/opkg" ]; then
-        die "Entware не установлен! Установите Entware перед запуском z2k."
+        die "Entware is not installed! Install Entware before starting z2k."
     fi
 
-    # Проверка curl
+    # curl check
     if ! command -v curl >/dev/null 2>&1; then
-        print_info "curl не найден, устанавливаю..."
-        /opt/bin/opkg update || die "Не удалось обновить opkg"
-        /opt/bin/opkg install curl || die "Не удалось установить curl"
+        print_info "curl not found, installing..."
+        /opt/bin/opkg update || die "Failed to update opkg"
+        /opt/bin/opkg install curl || die "Failed to install curl"
     fi
 
-    # Проверка архитектуры
+    # Architecture review
     local arch
     arch=$(uname -m)
     if [ "$arch" != "aarch64" ] && [ "$arch" != "arm64" ]; then
-        print_info "ВНИМАНИЕ: z2k разработан для ARM64 Keenetic"
-        print_info "Ваша архитектура: $arch"
-        printf "Продолжить? [y/N]: "
+        print_info "ATTENTION: z2k is designed for ARM64 Keenetic"
+        print_info "Your architecture: $arch"
+        printf "Continue? [y/N]:"
         read -r answer </dev/tty
-        [ "$answer" = "y" ] || [ "$answer" = "Y" ] || die "Отменено пользователем" 0
+        [ "$answer" = "y" ] || [ "$answer" = "Y" ] || die "Canceled by user" 0
     fi
 
-    print_success "Окружение проверено"
+    print_success "Environment checked"
 }
 
 # ==============================================================================
-# ЗАГРУЗКА МОДУЛЕЙ
+# LOADING MODULES
 # ==============================================================================
 
 download_modules() {
-    print_info "Загрузка модулей z2k..."
+    print_info "Loading z2k modules..."
 
-    # Создать директории
-    mkdir -p "$LIB_DIR" || die "Не удалось создать $LIB_DIR"
+    # Create directories
+    mkdir -p "$LIB_DIR" || die "Failed to create $LIB_DIR"
 
-    # Скачать каждый модуль
+    # Download each module
     for module in $MODULES; do
         local url="${GITHUB_RAW}/lib/${module}.sh"
         local output="${LIB_DIR}/${module}.sh"
 
-        print_info "Загрузка lib/${module}.sh..."
+        print_info "Loading lib/${module}.sh..."
 
         if curl -fsSL "$url" -o "$output"; then
-            print_success "Загружен: ${module}.sh"
+            print_success "Loaded: ${module}.sh"
         else
-            die "Ошибка загрузки модуля: ${module}.sh"
+            die "Error loading module: ${module}.sh"
         fi
     done
 
-    print_success "Все модули загружены"
+    print_success "All modules are loaded"
 }
 
 source_modules() {
-    print_info "Загрузка модулей в память..."
+    print_info "Loading modules into memory..."
 
     for module in $MODULES; do
         local module_file="${LIB_DIR}/${module}.sh"
 
         if [ -f "$module_file" ]; then
-            . "$module_file" || die "Ошибка загрузки модуля: ${module}.sh"
+            . "$module_file" || die "Error loading module: ${module}.sh"
         else
-            die "Модуль не найден: ${module}.sh"
+            die "Module not found: ${module}.sh"
         fi
     done
 
-    print_success "Модули загружены"
+    print_success "Modules loaded"
 }
 
 # ==============================================================================
-# ЗАГРУЗКА СТРАТЕГИЙ
+# LOADING STRATEGIES
 # ==============================================================================
 
 download_strategies_source() {
-    print_info "Загрузка файла стратегий (strats_new2.txt)..."
+    print_info "Loading the strategy file (strats_new2.txt)..."
 
     local url="${GITHUB_RAW}/strats_new2.txt"
     local output="${WORK_DIR}/strats_new2.txt"
@@ -173,29 +173,29 @@ download_strategies_source() {
     if curl -fsSL "$url" -o "$output"; then
         local lines
         lines=$(wc -l < "$output")
-        print_success "Загружено: strats_new2.txt ($lines строк)"
+        print_success "Loaded: strats_new2.txt ($lines lines)"
     else
-        die "Ошибка загрузки strats_new2.txt"
+        die "Error loading strats_new2.txt"
     fi
 
-    print_info "Загрузка QUIC стратегий (quic_strats.ini)..."
+    print_info "Loading QUIC strategies (quic_strats.ini)..."
     local quic_url="${GITHUB_RAW}/quic_strats.ini"
     local quic_output="${WORK_DIR}/quic_strats.ini"
 
     if curl -fsSL "$quic_url" -o "$quic_output"; then
         local lines
         lines=$(wc -l < "$quic_output")
-        print_success "Загружено: quic_strats.ini ($lines строк)"
+        print_success "Loaded: quic_strats.ini ($lines lines)"
     else
-        die "Ошибка загрузки quic_strats.ini"
+        die "Error loading quic_strats.ini"
     fi
 }
 
 download_fake_blobs() {
-    print_info "Загрузка fake blobs (TLS + QUIC)..."
+    print_info "Loading fake blobs (TLS + QUIC)..."
 
     local fake_dir="${WORK_DIR}/files/fake"
-    mkdir -p "$fake_dir" || die "Не удалось создать $fake_dir"
+    mkdir -p "$fake_dir" || die "Failed to create $fake_dir"
 
     local files="
 tls_clienthello_max_ru.bin
@@ -206,55 +206,55 @@ tls_clienthello_max_ru.bin
         local url="${GITHUB_RAW}/files/fake/${file}"
         local output="${fake_dir}/${file}"
         if curl -fsSL "$url" -o "$output"; then
-            print_success "Загружено: files/fake/${file}"
+            print_success "Uploaded: files/fake/${file}"
         else
-            die "Ошибка загрузки files/fake/${file}"
+            die "Error loading files/fake/${file}"
         fi
     done
 }
 
 download_init_script() {
-    print_info "Загрузка init скрипта (S99zapret2.new)..."
+    print_info "Loading init script (S99zapret2.new)..."
 
     local files_dir="${WORK_DIR}/files"
-    mkdir -p "$files_dir" || die "Не удалось создать $files_dir"
+    mkdir -p "$files_dir" || die "Failed to create $files_dir"
 
     local url="${GITHUB_RAW}/files/S99zapret2.new"
     local output="${files_dir}/S99zapret2.new"
 
     if curl -fsSL "$url" -o "$output"; then
-        print_success "Загружено: files/S99zapret2.new"
+        print_success "Uploaded by: files/S99zapret2.new"
     else
-        die "Ошибка загрузки files/S99zapret2.new"
+        die "Error loading files/S99zapret2.new"
     fi
 }
 
 generate_strategies_database() {
-    print_info "Генерация базы стратегий (strategies.conf)..."
+    print_info "Generating a strategy database (strategies.conf)..."
 
-    # Эта функция определена в lib/strategies.sh
+    # This function is defined in lib/strategies.sh
     if command -v generate_strategies_conf >/dev/null 2>&1; then
         generate_strategies_conf "${WORK_DIR}/strats_new2.txt" "${WORK_DIR}/strategies.conf" || \
-            die "Ошибка генерации strategies.conf"
+            die "Error generating strategies.conf"
 
         local count
         count=$(wc -l < "${WORK_DIR}/strategies.conf" | tr -d ' ')
-        print_success "Сгенерировано стратегий: $count"
+        print_success "Strategies generated: $count"
     else
-        die "Функция generate_strategies_conf не найдена"
+        die "function generate_strategies_conf not found"
     fi
 
-    print_info "Генерация базы QUIC стратегий (quic_strategies.conf)..."
+    print_info "Generating a database of QUIC strategies (quic_strategies.conf)..."
     if command -v generate_quic_strategies_conf >/dev/null 2>&1; then
         generate_quic_strategies_conf "${WORK_DIR}/quic_strats.ini" "${WORK_DIR}/quic_strategies.conf" || \
-            die "Ошибка генерации quic_strategies.conf"
+            die "Error generating quic_strategies.conf"
     else
-        die "Функция generate_quic_strategies_conf не найдена"
+        die "Function generate_quic_strategies_conf not found"
     fi
 }
 
 # ==============================================================================
-# ГЛАВНОЕ МЕНЮ BOOTSTRAP
+# BOOTSTRAP MAIN MENU
 # ==============================================================================
 
 show_welcome() {
@@ -273,17 +273,17 @@ show_welcome() {
 
 EOF
 
-    print_info "Инициализация..."
+    print_info "Initialization..."
 }
 
 check_installation_status() {
     if is_zapret2_installed; then
-        print_info "zapret2 уже установлен"
-        print_info "Статус сервиса: $(get_service_status)"
-        print_info "Текущая стратегия: #$(get_current_strategy)"
+        print_info "lock2 is already installed"
+        print_info "Service status: $(get_service_status)"
+        print_info "Current strategy: #$(get_current_strategy)"
         return 0
     else
-        print_info "zapret2 не установлен"
+        print_info "lock2 is not installed"
         return 1
     fi
 }
@@ -292,18 +292,18 @@ prompt_install_or_menu() {
     printf "\n"
 
     if is_zapret2_installed; then
-        print_info "Открываю меню управления..."
+        print_info "I open the control menu..."
         sleep 1
         show_main_menu
     else
-        print_info "zapret2 не установлен - запускаю установку..."
+        print_info "zapret2 is not installed - I start the installation..."
         run_full_install
     fi
 }
 
 
 # ==============================================================================
-# ОБРАБОТКА АРГУМЕНТОВ КОМАНДНОЙ СТРОКИ
+# PROCESSING COMMAND LINE ARGUMENTS
 # ==============================================================================
 
 handle_arguments() {
@@ -311,25 +311,25 @@ handle_arguments() {
 
     case "$command" in
         install|i)
-            print_info "Запуск установки zapret2..."
+            print_info "Starting the installation of lock2..."
             run_full_install
-            print_info "Открываю меню управления..."
+            print_info "I open the control menu..."
             sleep 1
             show_main_menu
             ;;
         menu|m)
-            print_info "Открытие меню..."
+            print_info "Opening menu..."
             show_main_menu
             ;;
         uninstall|remove)
-            print_info "Удаление zapret2..."
+            print_info "Removing lock2..."
             uninstall_zapret2
             ;;
         status|s)
             show_system_info
             ;;
         update|u)
-            print_info "Обновление z2k..."
+            print_info "z2k update..."
             update_z2k
             ;;
         version|v)
@@ -337,22 +337,22 @@ handle_arguments() {
             echo "zapret2: $(get_nfqws2_version)"
             ;;
         cleanup)
-            print_info "Очистка старых бэкапов..."
+            print_info "Cleaning up old backups..."
             cleanup_backups "${INIT_SCRIPT:-/opt/etc/init.d/S99zapret2}" 5
             ;;
         check|info)
-            print_info "Проверка активной конфигурации..."
+            print_info "Checking the active configuration..."
             show_active_processing
             ;;
         help|h|-h|--help)
             show_help
             ;;
         "")
-            # Без аргументов - показать welcome и предложить установку
+            # No arguments - show welcome and offer installation
             prompt_install_or_menu
             ;;
         *)
-            print_error "Неизвестная команда: $command"
+            print_error "Unknown command: $command"
             show_help
             exit 1
             ;;
@@ -389,120 +389,120 @@ EOF
 }
 
 # ==============================================================================
-# ФУНКЦИЯ ОБНОВЛЕНИЯ Z2K
+# Z2K UPDATE FUNCTION
 # ==============================================================================
 
 update_z2k() {
-    print_header "Обновление z2k"
+    print_header "z2k update"
 
     local latest_url="${GITHUB_RAW}/z2k.sh"
     local current_script
     current_script=$(readlink -f "$0")
 
-    print_info "Текущая версия: $Z2K_VERSION"
-    print_info "Загрузка последней версии..."
+    print_info "Current version: $Z2K_VERSION"
+    print_info "Downloading the latest version..."
 
-    # Скачать новую версию во временный файл
+    # Download the new version to a temporary file
     local temp_file
     temp_file=$(mktemp)
 
     if curl -fsSL "$latest_url" -o "$temp_file"; then
-        # Получить версию из нового файла
+        # Get version from new file
         local new_version
         new_version=$(grep '^Z2K_VERSION=' "$temp_file" | cut -d'"' -f2)
 
         if [ "$new_version" = "$Z2K_VERSION" ]; then
-            print_success "У вас уже последняя версия: $Z2K_VERSION"
+            print_success "You already have the latest version: $Z2K_VERSION"
             rm -f "$temp_file"
             return 0
         fi
 
-        print_info "Новая версия: $new_version"
+        print_info "New version: $new_version"
 
-        # Создать backup текущего скрипта
+        # Create a backup of the current script
         if [ -f "$current_script" ]; then
             cp "$current_script" "${current_script}.backup" || {
-                print_error "Не удалось создать backup"
+                print_error "Failed to create backup"
                 rm -f "$temp_file"
                 return 1
             }
         fi
 
-        # Заменить скрипт
+        # Replace script
         mv "$temp_file" "$current_script" && chmod +x "$current_script"
 
-        print_success "z2k обновлен: $Z2K_VERSION → $new_version"
-        print_info "Backup сохранен: ${current_script}.backup"
+        print_success "z2k updated: $Z2K_VERSION → $new_version"
+        print_info "Backup saved: ${current_script}.backup"
 
-        print_info "Перезапустите z2k для применения изменений"
+        print_info "Restart z2k to apply changes"
 
     else
-        print_error "Не удалось загрузить обновление"
+        print_error "Failed to download update"
         rm -f "$temp_file"
         return 1
     fi
 }
 
 # ==============================================================================
-# ГЛАВНАЯ ФУНКЦИЯ
+# MAIN FUNCTION
 # ==============================================================================
 
 main() {
-    # Показать приветствие
+    # Show greeting
     show_welcome
 
-    # Проверить окружение
+    # Check environment
     check_environment
 
-    # Инициализировать рабочую директорию
+    # Initialize working directory
     mkdir -p "$WORK_DIR" "$LIB_DIR"
 
-    # Установить обработчики сигналов (будет переопределено после загрузки utils.sh)
+    # Set signal handlers (will be overridden after utils.sh is loaded)
     trap 'echo ""; print_error "Прервано пользователем"; rm -rf "$WORK_DIR"; exit 130' INT TERM
 
-    # Скачать модули
+    # Download modules
     download_modules
 
-    # Загрузить модули в память
+    # Load modules into memory
     source_modules
 
-    # Теперь доступны все функции из модулей
-    # Переустановить обработчики сигналов с правильными функциями
+    # All module functions are now available
+    # Reinstall signal handlers with correct functions
     setup_signal_handlers
 
-    # Инициализировать системные переменные (SYSTEM, UNAME, INIT)
-    init_system_vars || die "Ошибка определения типа системы"
+    # Initialize system variables (SYSTEM, UNAME, INIT)
+    init_system_vars || die "System type detection error"
 
-    # Инициализация (создание рабочей директории с проверками из utils.sh)
-    init_work_dir || die "Ошибка инициализации"
+    # Initialization (creating a working directory with checks from utils.sh)
+    init_work_dir || die "Initialization error"
 
-    # Проверить права root (нужно для установки)
+    # Check root permissions (needed for installation)
     if [ "$1" = "install" ] || [ "$1" = "i" ]; then
-        check_root || die "Требуются права root для установки"
+        check_root || die "Requires root permissions for installation"
     fi
 
-    # Скачать strats_new2.txt
+    # Download strats_new2.txt
     download_strategies_source
 
-    # Скачать fake blobs
+    # Download fake blobs
     download_fake_blobs
 
-    # Скачать init скрипт
+    # Download init script
     download_init_script
 
 
-    # Сгенерировать strategies.conf
+    # Generate strategies.conf
     generate_strategies_database
 
-    # Обработать аргументы командной строки
+    # Process command line arguments
     handle_arguments "$1"
 
-    # Очистка при выходе (если не удаляется автоматически)
+    # Clear on exit (if not cleared automatically)
     # cleanup_work_dir
 }
 
 # ==============================================================================
-# ЗАПУСК
+# LAUNCH
 # ==============================================================================
 
 main "$@"

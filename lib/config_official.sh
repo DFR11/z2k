@@ -1,19 +1,19 @@
 #!/bin/sh
-# lib/config_official.sh - Генерация официального config файла для zapret2
-# Адаптировано для z2k с multi-profile стратегиями
+# lib/config_official.sh - Generate the official config file for zapret2
+# Adapted for z2k with multi-profile strategies
 
 # ==============================================================================
-# ГЕНЕРАЦИЯ NFQWS2_OPT ИЗ СТРАТЕГИЙ Z2K
+# GENERATING NFQWS2_OPT FROM Z2K STRATEGIES
 # ==============================================================================
 
 generate_nfqws2_opt_from_strategies() {
-    # Генерирует NFQWS2_OPT для config файла на основе текущих стратегий
+    # Generates NFQWS2_OPT for a config file based on current policies
 
     local config_dir="/opt/etc/zapret2"
     local extra_strats_dir="/opt/zapret2/extra_strats"
     local lists_dir="/opt/zapret2/lists"
 
-    # Загрузить текущие стратегии из категорий
+    # Download current strategies from categories
     local youtube_tcp_tcp=""
     local youtube_gv_tcp=""
     local rkn_tcp=""
@@ -23,7 +23,7 @@ generate_nfqws2_opt_from_strategies() {
     local discord_udp=""
     local custom_tcp=""
 
-    # Прочитать стратегии из файлов категорий
+    # Read strategies from category files
     if [ -f "${extra_strats_dir}/TCP/YT/Strategy.txt" ]; then
         youtube_tcp_tcp=$(cat "${extra_strats_dir}/TCP/YT/Strategy.txt")
     fi
@@ -44,14 +44,14 @@ generate_nfqws2_opt_from_strategies() {
         quic_rkn_udp=$(cat "${extra_strats_dir}/UDP/RUTRACKER/Strategy.txt")
     fi
 
-    # Discord стратегии (обычно фиксированные)
+    # Discord strategies (usually fixed)
     discord_tcp="--filter-tcp=443 --filter-l7=tls --payload=tls_client_hello --lua-desync=fake:blob=tls_clienthello_14:tls_mod=rnd,dupsid:ip_autottl=-2,3-20 --lua-desync=multisplit:pos=sld+1"
     discord_udp="--filter-udp=50000-50099,1400,3478-3481,5349 --filter-l7=discord,stun --payload=stun,discord_ip_discovery --out-range=-n10 --lua-desync=fake:blob=0x00000000000000000000000000000000:repeats=2"
 
-    # Дефолтная стратегия если не загружена
+    # Default strategy if not loaded
     local default_strategy="--filter-tcp=443 --filter-l7=tls --payload=tls_client_hello --lua-desync=fake:blob=fake_default_tls:repeats=6"
 
-    # Использовать дефолт если стратегия пустая
+    # Use default if strategy is empty
     [ -z "$youtube_tcp_tcp" ] && youtube_tcp_tcp="$default_strategy"
     [ -z "$youtube_gv_tcp" ] && youtube_gv_tcp="$default_strategy"
     [ -z "$rkn_tcp" ] && rkn_tcp="$default_strategy"
@@ -59,7 +59,7 @@ generate_nfqws2_opt_from_strategies() {
     [ -z "$quic_rkn_udp" ] && quic_rkn_udp="--filter-udp=443 --filter-l7=quic --payload=quic_initial --lua-desync=fake:blob=fake_default_quic:repeats=6"
     custom_tcp="$default_strategy"
 
-    # Генерировать NFQWS2_OPT в формате официального config
+    # Generate NFQWS2_OPT in official config format
     # ������������ NFQWS2_OPT � ������� ������������ config
     local nfqws2_opt_lines=""
 
@@ -106,7 +106,7 @@ NFQWS2_OPT
 }
 
 # ==============================================================================
-# СОЗДАНИЕ ОФИЦИАЛЬНОГО CONFIG ФАЙЛА
+# CREATING AN OFFICIAL CONFIG FILE
 # ==============================================================================
 
 create_official_config() {
@@ -114,23 +114,23 @@ create_official_config() {
 
     local config_file="${1:-/opt/zapret2/config}"
 
-    print_info "Создание официального config файла: $config_file"
+    print_info "Creating an official config file: $config_file"
 
-    # Создать директорию если не существует
+    # Create directory if it doesn't exist
     mkdir -p "$(dirname "$config_file")"
 
-    # Генерировать NFQWS2_OPT
+    # Generate NFQWS2_OPT
     local nfqws2_opt_section=$(generate_nfqws2_opt_from_strategies)
 
     # =========================================================================
-    # ВАЛИДАЦИЯ NFQWS2 ОПЦИЙ (ВАЖНО)
+    # VALIDATION OF NFQWS2 OPTIONS (IMPORTANT)
     # =========================================================================
-    print_info "Валидация сгенерированных опций nfqws2..."
+    print_info "Validation of generated nfqws2... options"
 
-    # Извлечь NFQWS2_OPT из сгенерированной секции
+    # Extract NFQWS2_OPT from generated section
     local nfqws2_opt_value=$(echo "$nfqws2_opt_section" | grep "^NFQWS2_OPT=" | sed 's/^NFQWS2_OPT=//' | tr -d '"')
 
-    # Загрузить модули для dry_run_nfqws()
+    # Load modules for dry_run_nfqws()
     if [ -f "/opt/zapret2/common/base.sh" ]; then
         . "/opt/zapret2/common/base.sh"
     fi
@@ -138,24 +138,24 @@ create_official_config() {
     if [ -f "/opt/zapret2/common/linux_daemons.sh" ]; then
         . "/opt/zapret2/common/linux_daemons.sh"
 
-        # Установить временно NFQWS2_OPT для проверки
+        # Set temporarily NFQWS2_OPT for testing
         export NFQWS2_OPT="$nfqws2_opt_value"
         export NFQWS2="/opt/zapret2/nfq2/nfqws2"
 
-        # Проверить опции
+        # Check options
         if dry_run_nfqws 2>/dev/null; then
-            print_success "Опции nfqws2 валидны"
+            print_success "nfqws2 options are valid"
         else
-            print_warning "Некоторые опции nfqws2 могут быть некорректными"
-            print_info "Продолжаем установку (init скрипт повторно проверит при запуске)"
+            print_warning "Some nfqws2 options may not be correct"
+            print_info "We continue with the installation (the init script will check again upon startup)"
         fi
     else
-        print_info "Модули валидации не найдены, пропускаем проверку"
+        print_info "Validation modules not found, skip the check"
     fi
 
     z2k_have_cmd() { command -v "$1" >/dev/null 2>&1; }
 
-    # Получить FWTYPE и FLOWOFFLOAD из окружения (если установлены)
+    # Get FWTYPE and FLOWOFFLOAD from the environment (if installed)
     local fwtype_value="${FWTYPE:-iptables}"
     local flowoffload_value="${FLOWOFFLOAD:-none}"
     local tmpdir_value="${TMPDIR:-}"
@@ -184,26 +184,26 @@ create_official_config() {
             if [ "$fwtype_value" = "nftables" ]; then
                 if z2k_have_cmd nft; then
                     disable_ipv6_value="0"
-                    print_info "IPv6 обнаружен, backend=nftables: включаем обработку IPv6 (DISABLE_IPV6=0)"
+                    print_info "IPv6 detected, backend=nftables: enable IPv6 processing (DISABLE_IPV6=0)"
                 else
-                    print_info "IPv6 обнаружен, но nft не найден: оставляем IPv6 отключенным (DISABLE_IPV6=1)"
+                    print_info "IPv6 detected, but nft not found: leave IPv6 disabled (DISABLE_IPV6=1)"
                 fi
             else
                 if z2k_have_cmd ip6tables; then
                     disable_ipv6_value="0"
-                    print_info "IPv6 обнаружен, backend=iptables: включаем обработку IPv6 (DISABLE_IPV6=0)"
+                    print_info "IPv6 detected, backend=iptables: enable IPv6 processing (DISABLE_IPV6=0)"
                 else
-                    print_info "IPv6 обнаружен, но ip6tables не найден: оставляем IPv6 отключенным (DISABLE_IPV6=1)"
+                    print_info "IPv6 detected, but ip6tables not found: leave IPv6 disabled (DISABLE_IPV6=1)"
                 fi
             fi
         else
-            print_info "IPv6 не обнаружен (нет default route/global addr): оставляем IPv6 отключенным (DISABLE_IPV6=1)"
+            print_info "IPv6 not detected (no default route/global addr): leave IPv6 disabled (DISABLE_IPV6=1)"
         fi
     else
-        print_info "DISABLE_IPV6 задан вручную: DISABLE_IPV6=$disable_ipv6_value"
+        print_info "DISABLE_IPV6 is set manually: DISABLE_IPV6=$disable_ipv6_value"
     fi
 
-    # Создать полный config файл
+    # Create a complete config file
     cat > "$config_file" <<CONFIG
 # zapret2 configuration for Keenetic
 # Generated by z2k installer
@@ -257,10 +257,10 @@ NFQWS2_UDP_PKT_IN=""
 # This enables standard hostlists and autohostlist like upstream zapret2
 CONFIG
 
-    # Добавить сгенерированный NFQWS2_OPT
+    # Add generated NFQWS2_OPT
     echo "$nfqws2_opt_section" >> "$config_file"
 
-    # Добавить остальные настройки
+    # Add other settings
     cat >> "$config_file" <<'CONFIG'
 
 # ==============================================================================
@@ -292,7 +292,7 @@ FLOWOFFLOAD=$flowoffload_value
 # Empty = use system default /tmp (tmpfs, in RAM)
 # Set to disk path for low RAM systems (e.g., /opt/zapret2/tmp)
 CONFIG
-    # Добавить TMPDIR только если установлен
+    # Add TMPDIR only if installed
     if [ -n "$tmpdir_value" ]; then
         echo "TMPDIR=$tmpdir_value" >> "$config_file"
     else
@@ -363,37 +363,37 @@ MDIG_EAGAIN=10
 MDIG_EAGAIN_DELAY=500
 CONFIG
 
-    print_success "Config файл создан: $config_file"
+    print_success "Config file created: $config_file"
     return 0
 }
 
 # ==============================================================================
-# ОБНОВЛЕНИЕ NFQWS2_OPT В СУЩЕСТВУЮЩЕМ CONFIG
+# UPDATING NFQWS2_OPT IN AN EXISTING CONFIG
 # ==============================================================================
 
 update_nfqws2_opt_in_config() {
-    # Обновляет только секцию NFQWS2_OPT в существующем config файле
-    # $1 - путь к config файлу
+    # Updates only the NFQWS2_OPT section in an existing config file
+    # $1 - path to the config file
 
     local config_file="${1:-/opt/zapret2/config}"
 
     if [ ! -f "$config_file" ]; then
-        print_error "Config файл не найден: $config_file"
+        print_error "Config file not found: $config_file"
         return 1
     fi
 
-    print_info "Обновление NFQWS2_OPT в: $config_file"
+    print_info "Update NFQWS2_OPT in: $config_file"
 
-    # Создать backup
+    # Create backup
     cp "$config_file" "${config_file}.backup.$(date +%Y%m%d_%H%M%S)"
 
-    # Генерировать новый NFQWS2_OPT
+    # Generate new NFQWS2_OPT
     local nfqws2_opt_section=$(generate_nfqws2_opt_from_strategies)
 
-    # Создать временный файл
+    # Create temporary file
     local temp_file="${config_file}.tmp"
 
-    # Удалить старый NFQWS2_OPT и добавить новый
+    # Remove old NFQWS2_OPT and add new one
     awk '
     /^NFQWS2_OPT=/ {
         in_nfqws_opt=1
@@ -406,10 +406,10 @@ update_nfqws2_opt_in_config() {
     !in_nfqws_opt { print }
     ' "$config_file" > "$temp_file"
 
-    # Добавить новый NFQWS2_OPT в конец файла (перед последней секцией)
-    # Найти позицию для вставки (перед FIREWALL SETTINGS или в конец)
+    # Add new NFQWS2_OPT to the end of the file (before the last section)
+    # Find the position to insert (before FIREWALL SETTINGS or at the end)
     if grep -q "# FIREWALL SETTINGS" "$temp_file"; then
-        # Вставить перед FIREWALL SETTINGS
+        # Insert before FIREWALL SETTINGS
         awk -v opt="$nfqws2_opt_section" '
         /# FIREWALL SETTINGS/ {
             print opt
@@ -419,20 +419,20 @@ update_nfqws2_opt_in_config() {
         ' "$temp_file" > "${temp_file}.2"
         mv "${temp_file}.2" "$temp_file"
     else
-        # Добавить в конец
+        # Add to end
         echo "" >> "$temp_file"
         echo "$nfqws2_opt_section" >> "$temp_file"
     fi
 
-    # Заменить оригинальный файл
+    # Replace original file
     mv "$temp_file" "$config_file"
 
-    print_success "NFQWS2_OPT обновлён в config файле"
+    print_success "NFQWS2_OPT updated in config file"
     return 0
 }
 
 # ==============================================================================
-# ЭКСПОРТ ФУНКЦИЙ
+# EXPORTING FUNCTIONS
 # ==============================================================================
 
-# Функции доступны после source этого файла
+# Functions are available after the source of this file

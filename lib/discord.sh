@@ -1,15 +1,15 @@
 #!/bin/sh
-# lib/discord.sh - Конфигурация Discord voice/video
-# Точная копия подхода zapret4rocket (z4r) с расширенными UDP портами
+# lib/discord.sh - Discord voice/video configuration
+# An exact copy of the zapret4rocket (z4r) approach with extended UDP ports
 
 # ==============================================================================
-# КОНСТАНТЫ DISCORD
+# DISCORD CONSTANTS
 # ==============================================================================
 
-# Расширенные UDP порты для Discord voice/video (как в z4r)
+# Extended UDP ports for Discord voice/video (same as z4r)
 DISCORD_UDP_PORTS="443,50000:50099,1400,3478:3481,5349"
 
-# Домены Discord (будут загружены из discord.txt)
+# Discord domains (will be loaded from discord.txt)
 DISCORD_DOMAINS="
 discord.com
 discord.gg
@@ -23,52 +23,52 @@ discord-attachments-uploads-prd.storage.googleapis.com
 "
 
 # ==============================================================================
-# НАСТРОЙКА DISCORD VOICE/VIDEO
+# DISCORD VOICE/VIDEO SETUP
 # ==============================================================================
 
 configure_discord_voice() {
-    print_header "Настройка Discord: голос и видео"
+    print_header "Setting up Discord: voice and video"
 
-    # Проверить установку
+    # Check installation
     if ! is_zapret2_installed; then
-        print_error "zapret2 не установлен"
+        print_error "lock2 is not installed"
         return 1
     fi
 
-    # Проверить наличие списка Discord доменов
+    # Check for a list of Discord domains
     if [ ! -f "${LISTS_DIR}/discord.txt" ]; then
-        print_warning "Список discord.txt не найден"
-        print_info "Загружаю список доменов..."
+        print_warning "Discord.txt list not found"
+        print_info "Loading a list of domains..."
         download_domain_lists || {
-            print_error "Не удалось загрузить списки"
+            print_error "Failed to load lists"
             return 1
         }
     fi
 
     print_separator
-    print_info "Discord использует:"
-    print_info "  - TCP 443 для текстовых чатов"
-    print_info "  - UDP 443, 50000-50099 для голоса/видео"
-    print_info "  - UDP 1400, 3478-3481, 5349 для WebRTC"
+    print_info "Discord uses:"
+    print_info "- TCP 443 for text chats"
+    print_info "- UDP 443, 50000-50099 for voice/video"
+    print_info "- UDP 1400, 3478-3481, 5349 for WebRTC"
     print_separator
 
-    # Получить текущую стратегию
+    # Get current strategy
     local current_strategy
     current_strategy=$(get_current_strategy)
 
-    if [ "$current_strategy" = "не задана" ] || [ -z "$current_strategy" ]; then
-        print_warning "Текущая стратегия не задана"
-        printf "\nВыберите стратегию для Discord (рекомендуется из TOP-20).\n"
-        printf "Введите номер стратегии: "
+    if [ "$current_strategy" = "not specified" ] || [ -z "$current_strategy" ]; then
+        print_warning "The current strategy is not set"
+        printf "\nChoose a strategy for Discord (recommended from TOP-20).\n"
+        printf "Enter strategy number:"
         read -r strategy_num </dev/tty
     else
-        printf "\nТекущая стратегия: #%s\n" "$current_strategy"
-        printf "Использовать её для Discord? [Y/n]: "
+        printf "\nCurrent strategy: #%s\n" "$current_strategy"
+        printf "Use it for Discord? [Y/n]:"
         read -r answer </dev/tty
 
         case "$answer" in
             [Nn]|[Nn][Oo])
-                printf "Введите номер новой стратегии: "
+                printf "Enter the new strategy number:"
                 read -r strategy_num </dev/tty
                 ;;
             *)
@@ -77,59 +77,59 @@ configure_discord_voice() {
         esac
     fi
 
-    # Проверить стратегию
+    # Check strategy
     if ! strategy_exists "$strategy_num"; then
-        print_error "Стратегия #$strategy_num не найдена"
+        print_error "Strategy #$strategy_num not found"
         return 1
     fi
 
-    # Получить параметры TCP стратегии
+    # Get TCP strategy parameters
     local tcp_params
     tcp_params=$(get_strategy "$strategy_num")
 
     if [ -z "$tcp_params" ]; then
-        print_error "Не удалось получить параметры стратегии"
+        print_error "Failed to get strategy parameters"
         return 1
     fi
 
-    print_info "Применяю стратегию #$strategy_num для Discord..."
+    print_info "I'm using the #$strategy_num for Discord..."
     print_separator
-    printf "TCP параметры:\n%s\n" "$tcp_params"
+    printf "TCP parameter:\n%s\n" "$tcp_params"
     print_separator
 
-    # Сгенерировать Discord multi-profile конфигурацию
+    # Generate Discord multi-profile configuration
     generate_discord_profile "$tcp_params"
 
-    print_success "Discord настроен!"
+    print_success "Discord is set up!"
     print_separator
-    print_info "Конфигурация:"
-    print_info "  - TCP (текст): стратегия #$strategy_num"
-    print_info "  - UDP (голос/видео): расширенные порты"
-    print_info "  - Список доменов: ${LISTS_DIR}/discord.txt"
+    print_info "Configuration:"
+    print_info "- TCP (text): strategy #$strategy_num"
+    print_info "- UDP (voice/video): extended ports"
+    print_info "- List of domains: ${LISTS_DIR}/discord.txt"
     print_separator
 
     return 0
 }
 
 # ==============================================================================
-# ГЕНЕРАЦИЯ DISCORD ПРОФИЛЯ
+# GENERATING A DISCORD PROFILE
 # ==============================================================================
 
 generate_discord_profile() {
     local tcp_params=$1
 
-    # Создать временный файл с Discord профилем
+    # Create a temporary file with Discord profile
     local discord_profile_file="/tmp/discord_profile.conf"
 
     cat > "$discord_profile_file" <<DISCORD_PROFILE
-# Discord TCP Profile (текстовые чаты)
+# Discord TCP Profile (text chats)
 --filter-tcp=443
 --hostlist=${LISTS_DIR}/discord.txt
 $tcp_params
 
 --new
 
-# Discord UDP Profile (голос/видео)
+# Discord UDP Profile (voice/video)
 --filter-udp=${DISCORD_UDP_PORTS}
 --hostlist=${LISTS_DIR}/discord.txt
 --filter-l7=discord,stun
@@ -138,15 +138,15 @@ $tcp_params
 --lua-desync=fake:blob=0x00000000000000000000000000000000:repeats=2
 DISCORD_PROFILE
 
-    # Инжектировать в init скрипт
+    # Inject into init script
     inject_discord_to_init "$discord_profile_file"
 
-    # Удалить временный файл
+    # Delete temporary file
     rm -f "$discord_profile_file"
 }
 
 # ==============================================================================
-# ИНЖЕКЦИЯ DISCORD КОНФИГУРАЦИИ В INIT СКРИПТ
+# INJECTION OF DISCORD CONFIGURATION INTO INIT SCRIPT
 # ==============================================================================
 
 inject_discord_to_init() {
@@ -154,28 +154,28 @@ inject_discord_to_init() {
     local init_script="${INIT_SCRIPT:-/opt/etc/init.d/S99zapret2}"
 
     if [ ! -f "$init_script" ]; then
-        print_error "Init скрипт не найден: $init_script"
+        print_error "Init script not found: $init_script"
         return 1
     fi
 
     if [ ! -f "$profile_file" ]; then
-        print_error "Файл профиля не найден: $profile_file"
+        print_error "Profile file not found: $profile_file"
         return 1
     fi
 
-    # Создать backup
+    # Create backup
     backup_file "$init_script" || {
-        print_error "Не удалось создать backup"
+        print_error "Failed to create backup"
         return 1
     }
 
-    # Прочитать профиль
+    # Read profile
     local discord_config
     discord_config=$(cat "$profile_file")
 
-    # Модифицировать init скрипт
-    # 1. Включить Discord (DISCORD_ENABLED=1)
-    # 2. Установить TCP и UDP параметры между маркерами
+    # Modify init script
+    # 1. Enable Discord (DISCORD_ENABLED=1)
+    # 2. Set TCP and UDP parameters between markers
 
     awk -v config="$discord_config" '
         BEGIN {
@@ -183,7 +183,7 @@ inject_discord_to_init() {
             discord_marker_found=0
             split(config, lines, "\n")
 
-            # Извлечь TCP и UDP части из config
+            # Extract TCP and UDP parts from config
             tcp_part=""
             udp_part=""
             in_new=0
@@ -205,13 +205,13 @@ inject_discord_to_init() {
             }
         }
 
-        # Включить Discord
+        # Enable Discord
         /^DISCORD_ENABLED=/ {
             print "DISCORD_ENABLED=1"
             next
         }
 
-        # Заменить между маркерами
+        # Replace between markers
         /DISCORD_MARKER_START/ {
             print
             print "DISCORD_TCP=\"" tcp_part "\""
@@ -237,42 +237,42 @@ inject_discord_to_init() {
         }
     ' "$init_script" > "${init_script}.tmp"
 
-    # Проверить успех
+    # Check success
     if [ $? -ne 0 ]; then
-        print_error "Ошибка модификации init скрипта"
+        print_error "Error modifying init script"
         return 1
     fi
 
-    # Заменить init скрипт
+    # Replace init script
     mv "${init_script}.tmp" "$init_script" || {
-        print_error "Не удалось заменить init скрипт"
+        print_error "Failed to replace init script"
         return 1
     }
 
     chmod +x "$init_script"
 
-    # Перезапустить сервис
-    print_info "Перезапуск сервиса..."
+    # Restart service
+    print_info "Restarting the service..."
     "$init_script" restart >/dev/null 2>&1
 
     sleep 2
 
     if is_zapret2_running; then
-        print_success "Сервис перезапущен с Discord конфигурацией"
+        print_success "Service restarted with Discord configuration"
 
-        # Проверить что запущены 2 процесса nfqws2
+        # Check that 2 nfqws2 processes are running
         local process_count
         process_count=$(pgrep -c -f "nfqws2")
 
         if [ "$process_count" -ge 2 ]; then
-            print_success "Запущено процессов nfqws2: $process_count (основной + Discord)"
+            print_success "nfqws2 processes running: $process_count (main + Discord)"
         else
-            print_warning "Запущено процессов: $process_count (ожидалось 2)"
-            print_info "Проверьте статус: $init_script status"
+            print_warning "Processes running: $process_count (expected 2)"
+            print_info "Check the status: $init_script status"
         fi
     else
-        print_error "Сервис не запустился"
-        print_info "Восстанавливаю предыдущую конфигурацию..."
+        print_error "The service did not start"
+        print_info "Restoring the previous configuration..."
         restore_backup "$init_script"
         "$init_script" restart >/dev/null 2>&1
         return 1
@@ -282,23 +282,23 @@ inject_discord_to_init() {
 }
 
 # ==============================================================================
-# ОТКЛЮЧЕНИЕ DISCORD КОНФИГУРАЦИИ
+# DISABLE DISCORD CONFIGURATION
 # ==============================================================================
 
 disable_discord() {
-    print_header "Отключение Discord конфигурации"
+    print_header "Disabling Discord Configuration"
 
     local init_script="${INIT_SCRIPT:-/opt/etc/init.d/S99zapret2}"
 
     if [ ! -f "$init_script" ]; then
-        print_error "Init скрипт не найден"
+        print_error "Init script not found"
         return 1
     fi
 
-    # Создать backup
+    # Create backup
     backup_file "$init_script"
 
-    # Отключить Discord (DISCORD_ENABLED=0)
+    # Disable Discord (DISCORD_ENABLED=0)
     awk '
         /^DISCORD_ENABLED=/ {
             print "DISCORD_ENABLED=0"
@@ -310,14 +310,14 @@ disable_discord() {
     mv "${init_script}.tmp" "$init_script"
     chmod +x "$init_script"
 
-    # Перезапустить
-    print_info "Перезапуск сервиса..."
+    # Restart
+    print_info "Restarting the service..."
     "$init_script" restart >/dev/null 2>&1
 
     if is_zapret2_running; then
-        print_success "Discord конфигурация отключена"
+        print_success "Discord config disabled"
     else
-        print_error "Ошибка перезапуска сервиса"
+        print_error "Service restart error"
         return 1
     fi
 
@@ -325,47 +325,47 @@ disable_discord() {
 }
 
 # ==============================================================================
-# СТАТУС DISCORD КОНФИГУРАЦИИ
+# DISCORD CONFIGURATION STATUS
 # ==============================================================================
 
 discord_status() {
-    print_header "Статус Discord конфигурации"
+    print_header "Discord configuration status"
 
     local init_script="${INIT_SCRIPT:-/opt/etc/init.d/S99zapret2}"
 
     if [ ! -f "$init_script" ]; then
-        print_error "Init скрипт не найден"
+        print_error "Init script not found"
         return 1
     fi
 
-    # Проверить DISCORD_ENABLED
+    # Check DISCORD_ENABLED
     local discord_enabled
     discord_enabled=$(grep "^DISCORD_ENABLED=" "$init_script" | cut -d'=' -f2)
 
     if [ "$discord_enabled" = "1" ]; then
-        print_success "Discord конфигурация: ВКЛЮЧЕНА"
+        print_success "Discord Configuration: ON"
 
-        # Показать UDP порты
-        print_info "UDP порты: $DISCORD_UDP_PORTS"
+        # Show UDP ports
+        print_info "UDP ports: $DISCORD_UDP_PORTS"
 
-        # Показать параметры
+        # Show options
         print_separator
         grep "^DISCORD_TCP=" "$init_script" | cut -d'"' -f2
         print_separator
 
-        # Проверить процессы
+        # Check processes
         local process_count
         process_count=$(pgrep -c -f "nfqws2")
-        print_info "Процессов nfqws2: $process_count"
+        print_info "nfqws2 processes: $process_count"
     else
-        print_info "Discord конфигурация: ОТКЛЮЧЕНА"
+        print_info "Discord config: DISABLED"
     fi
 
     return 0
 }
 
 # ==============================================================================
-# ЭКСПОРТ ФУНКЦИЙ
+# EXPORTING FUNCTIONS
 # ==============================================================================
 
-# Все функции доступны после source этого файла
+# All functions are available after the source of this file

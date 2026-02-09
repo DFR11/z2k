@@ -1,78 +1,78 @@
 #!/bin/sh
-# lib/config.sh - Управление конфигурацией и списками доменов
-# Скачивание, обновление и управление списками для zapret2
+# lib/config.sh - Manage configuration and domain lists
+# Download, update and manage lists for zapret2
 
 # ==============================================================================
-# УПРАВЛЕНИЕ СПИСКАМИ ДОМЕНОВ
+# MANAGING DOMAIN LISTS
 # ==============================================================================
 
-# Скачать списки доменов из zapret4rocket (z4r)
+# Download domain lists from zapret4rocket (z4r)
 download_domain_lists() {
-    print_header "Загрузка списков доменов"
-    print_info "Источник: zapret4rocket (master branch)"
-    print_info "Списки используются как есть, без модификаций"
+    print_header "Loading domain lists"
+    print_info "Source: zapret4rocket (master branch)"
+    print_info "Lists are used as is, without modifications"
 
-    # Создать структуру директорий
+    # Create directory structure
     local yt_tcp_dir="${ZAPRET2_DIR}/extra_strats/TCP/YT"
     local rkn_tcp_dir="${ZAPRET2_DIR}/extra_strats/TCP/RKN"
     local yt_udp_dir="${ZAPRET2_DIR}/extra_strats/UDP/YT"
     local rt_udp_dir="${ZAPRET2_DIR}/extra_strats/UDP/RUTRACKER"
 
     mkdir -p "$yt_tcp_dir" "$rkn_tcp_dir" "$yt_udp_dir" "$rt_udp_dir" "$LISTS_DIR" || {
-        print_error "Не удалось создать директории"
+        print_error "Failed to create directories"
         return 1
     }
 
-    # 1. YouTube TCP - загрузить из extra_strats/TCP/YT/List.txt
-    print_info "Загрузка YouTube TCP list..."
+    # 1. YouTube TCP - download from extra_strats/TCP/YT/List.txt
+    print_info "Loading YouTube TCP list..."
     if curl -fsSL "${Z4R_BASE_URL}/extra_strats/TCP/YT/List.txt" -o "${yt_tcp_dir}/List.txt"; then
         local count
         count=$(wc -l < "${yt_tcp_dir}/List.txt" 2>/dev/null || echo "0")
-        print_success "YouTube TCP: $count доменов"
+        print_success "YouTube TCP: $count domains"
     else
-        print_error "Ошибка загрузки YouTube TCP list"
+        print_error "Error loading YouTube TCP list"
     fi
 
-    # 2. YouTube GV - использует --hostlist-domains=googlevideo.com (список не нужен)
-    print_info "YouTube GV: используется --hostlist-domains=googlevideo.com"
+    # 2. YouTube GV - uses --hostlist-domains=googlevideo.com (no list needed)
+    print_info "YouTube GV: using --hostlist-domains=googlevideo.com"
 
-    # 3. RKN - загрузить из extra_strats/TCP/RKN/List.txt (БЕЗ модификаций)
-    print_info "Загрузка RKN list..."
+    # 3. RKN - download from extra_strats/TCP/RKN/List.txt (WITHOUT modifications)
+    print_info "Loading RKN list..."
     if curl -fsSL "${Z4R_BASE_URL}/extra_strats/TCP/RKN/List.txt" -o "${rkn_tcp_dir}/List.txt"; then
         local count
         count=$(wc -l < "${rkn_tcp_dir}/List.txt" 2>/dev/null || echo "0")
-        print_success "RKN: $count доменов"
+        print_success "RKN: $count domains"
     else
-        print_error "Ошибка загрузки RKN list"
+        print_error "Error loading RKN list"
     fi
 
-    # 4. QUIC YouTube - загрузить из extra_strats/UDP/YT/List.txt
-    print_info "Загрузка QUIC YouTube list..."
+    # 4. QUIC YouTube - download from extra_strats/UDP/YT/List.txt
+    print_info "Loading QUIC YouTube list..."
     if curl -fsSL "${Z4R_BASE_URL}/extra_strats/UDP/YT/List.txt" -o "${yt_udp_dir}/List.txt"; then
         local count
         count=$(wc -l < "${yt_udp_dir}/List.txt" 2>/dev/null || echo "0")
-        print_success "QUIC YouTube: $count доменов"
+        print_success "QUIC YouTube: $count domains"
     else
-        print_warning "Не удалось загрузить QUIC YouTube list"
+        print_warning "Failed to load QUIC YouTube list"
     fi
 
-    # 5. Discord - загрузить из lists/russia-discord.txt
-    print_info "Загрузка Discord list..."
+    # 5. Discord - download from lists/russia-discord.txt
+    print_info "Loading Discord list..."
     if curl -fsSL "${Z4R_LISTS_URL}/russia-discord.txt" -o "${LISTS_DIR}/discord.txt"; then
         local count
         count=$(wc -l < "${LISTS_DIR}/discord.txt" 2>/dev/null || echo "0")
-        print_success "Discord: $count доменов"
+        print_success "Discord: $count domains"
     else
-        print_error "Ошибка загрузки Discord list"
+        print_error "Error loading Discord list"
     fi
 
-    # 6. Custom - создать пустой файл для пользовательских доменов
+    # 6. Custom - create an empty file for custom domains
     if [ ! -f "${LISTS_DIR}/custom.txt" ]; then
         touch "${LISTS_DIR}/custom.txt"
-        print_info "Создан custom.txt для пользовательских доменов"
+        print_info "Created custom.txt for custom domains"
     fi
 
-    # 7. RuTracker QUIC - локальный список
+    # 7. RuTracker QUIC - local list
     cat > "${rt_udp_dir}/List.txt" <<'EOF'
 rutracker.org
 www.rutracker.org
@@ -81,43 +81,43 @@ fastpic.org
 t-ru.org
 www.t-ru.org
 EOF
-    print_success "RuTracker QUIC: создан локальный список"
+    print_success "RuTracker QUIC: local list created"
 
     print_separator
-    print_success "Списки доменов загружены"
+    print_success "Domain lists loaded"
 
     return 0
 }
 
-# Обновить списки доменов
+# Update domain lists
 update_domain_lists() {
-    print_header "Обновление списков доменов"
+    print_header "Updating domain lists"
 
-    # Скачать обновленные списки
+    # Download updated lists
     download_domain_lists
 
-    # Показать статистику
+    # Show statistics
     print_separator
     show_domain_lists_stats
 
-    # Спросить о перезапуске сервиса
+    # Ask about restarting the service
     if is_zapret2_running; then
-        printf "\nПерезапустить сервис для применения изменений? [Y/n]: "
+        printf "\nDo you want to restart the service to apply the changes? [Y/n]:"
         read -r answer </dev/tty
 
         case "$answer" in
             [Nn]|[Nn][Oo])
-                print_info "Сервис не перезапущен"
+                print_info "The service has not been restarted"
                 print_info "Перезапустите вручную: /opt/etc/init.d/S99zapret2 restart"
                 ;;
             *)
-                print_info "Перезапуск сервиса..."
+                print_info "Restarting the service..."
                 "$INIT_SCRIPT" restart
                 sleep 2
                 if is_zapret2_running; then
-                    print_success "Сервис перезапущен"
+                    print_success "Service restarted"
                 else
-                    print_error "Не удалось перезапустить сервис"
+                    print_error "Failed to restart service"
                 fi
                 ;;
         esac
@@ -126,11 +126,11 @@ update_domain_lists() {
     return 0
 }
 
-# Показать статистику по спискам доменов
+# Show statistics on domain lists
 show_domain_lists_stats() {
-    print_header "Статистика списков доменов"
+    print_header "Domain list statistics"
 
-    printf "%-30s | %-10s\n" "Список" "Доменов"
+    printf "%-30s | %-10s\n" "List" "Domains"
     print_separator
 
     # YouTube TCP
@@ -187,11 +187,11 @@ show_domain_lists_stats() {
     print_separator
 }
 
-# Показать какие списки обрабатываются и режим работы
+# Show which lists are processed and operating mode
 show_active_processing() {
-    print_header "Активная обработка трафика"
+    print_header "Active traffic processing"
 
-    # Проверить режим ALL_TCP443
+    # Check ALL_TCP443 mode
     local all_tcp443_enabled=0
     local all_tcp443_strategy=""
     local all_tcp443_conf="${CONFIG_DIR}/all_tcp443.conf"
@@ -202,31 +202,31 @@ show_active_processing() {
         all_tcp443_strategy=$STRATEGY
     fi
 
-    # Проверить QUIC RuTracker
+    # Check QUIC RuTracker
     local rkn_quic_enabled=0
     if is_rutracker_quic_enabled 2>/dev/null; then
         rkn_quic_enabled=1
     fi
 
-    # Показать режим работы
-    print_info "Режим обработки трафика:"
+    # Show operating mode
+    print_info "Traffic processing mode:"
     printf "\n"
 
     if [ "$all_tcp443_enabled" = "1" ]; then
-        print_warning "[WARN]  РЕЖИМ ALL TCP-443 ВКЛЮЧЕН"
-        printf "    Обрабатывается ВЕСЬ HTTPS трафик (порт 443)\n"
-        printf "    Стратегия: #%s\n" "$all_tcp443_strategy"
-        printf "    Списки доменов НЕ используются!\n"
+        print_warning "[WARN] ALL TCP-443 MODE ON"
+        printf "ALL HTTPS traffic is processed (port 443)\n"
+        printf "Strategy: #%s\n" "$all_tcp443_strategy"
+        printf "Domain lists are NOT used!\n"
         print_separator
     else
-        print_success "[OK] Режим по спискам доменов (нормальный)"
+        print_success "[OK] Domain list mode (normal)"
         printf "\n"
     fi
 
-    # Показать активные списки
-    print_info "Обрабатываемые списки доменов:"
+    # Show active lists
+    print_info "Processed domain lists:"
     print_separator
-    printf "%-30s | %-10s | %s\n" "Категория" "Доменов" "Статус"
+    printf "%-30s | %-10s | %s\n" "Category" "Domains" "Status"
     print_separator
 
     # RKN TCP
@@ -234,7 +234,7 @@ show_active_processing() {
     if [ -f "$rkn_list" ]; then
         local count
         count=$(wc -l < "$rkn_list" 2>/dev/null || echo "0")
-        printf "%-30s | %-10s | %s\n" "RKN (заблокированные)" "$count" "Активен"
+        printf "%-30s | %-10s | %s\n" "RKN (locked)" "$count" "Active"
     fi
 
     # YouTube TCP
@@ -242,18 +242,18 @@ show_active_processing() {
     if [ -f "$yt_tcp_list" ]; then
         local count
         count=$(wc -l < "$yt_tcp_list" 2>/dev/null || echo "0")
-        printf "%-30s | %-10s | %s\n" "YouTube TCP" "$count" "Активен"
+        printf "%-30s | %-10s | %s\n" "YouTube TCP" "$count" "Active"
     fi
 
     # YouTube GV
-    printf "%-30s | %-10s | %s\n" "YouTube GV (CDN)" "googlevideo.com" "Активен"
+    printf "%-30s | %-10s | %s\n" "YouTube GV (CDN)" "googlevideo.com" "Active"
 
     # QUIC YouTube
     local quic_yt_list="${ZAPRET2_DIR}/extra_strats/UDP/YT/List.txt"
     if [ -f "$quic_yt_list" ]; then
         local count
         count=$(wc -l < "$quic_yt_list" 2>/dev/null || echo "0")
-        printf "%-30s | %-10s | %s\n" "QUIC YouTube (UDP 443)" "$count" "Активен"
+        printf "%-30s | %-10s | %s\n" "QUIC YouTube (UDP 443)" "$count" "Active"
     fi
 
     # QUIC RuTracker
@@ -263,9 +263,9 @@ show_active_processing() {
         count=$(wc -l < "$rt_quic_list" 2>/dev/null || echo "0")
         local status
         if [ "$rkn_quic_enabled" = "1" ]; then
-            status="Активен"
+            status="Active"
         else
-            status="Выключен"
+            status="Off"
         fi
         printf "%-30s | %-10s | %s\n" "QUIC RuTracker (UDP 443)" "$count" "$status"
     fi
@@ -275,7 +275,7 @@ show_active_processing() {
     if [ -f "$discord_list" ]; then
         local count
         count=$(wc -l < "$discord_list" 2>/dev/null || echo "0")
-        printf "%-30s | %-10s | %s\n" "Discord (TCP+UDP)" "$count" "Активен"
+        printf "%-30s | %-10s | %s\n" "Discord (TCP+UDP)" "$count" "Active"
     fi
 
     # Custom
@@ -283,103 +283,103 @@ show_active_processing() {
     if [ -f "$custom_list" ]; then
         local count
         count=$(wc -l < "$custom_list" 2>/dev/null || echo "0")
-        local status="Пустой"
+        local status="Empty"
         if [ "$count" -gt 0 ]; then
-            status="Активен"
+            status="Active"
         fi
-        printf "%-30s | %-10s | %s\n" "Custom (пользовательские)" "$count" "$status"
+        printf "%-30s | %-10s | %s\n" "Custom" "$count" "$status"
     fi
 
     print_separator
 
-    # Показать исключения
-    print_info "Исключения (whitelist):"
+    # Show exceptions
+    print_info "Exceptions (whitelist):"
     local whitelist="${LISTS_DIR}/whitelist.txt"
     if [ -f "$whitelist" ]; then
         local count
         count=$(grep -v "^#" "$whitelist" | grep -v "^$" | wc -l 2>/dev/null || echo "0")
-        printf "  %s доменов исключено из обработки\n" "$count"
-        printf "  Файл: %s\n" "$whitelist"
+        printf "%s domains are excluded from processing\n" "$count"
+        printf "File: %s\n" "$whitelist"
     else
-        printf "  Whitelist не найден\n"
+        printf "Whitelist not found\n"
     fi
 
     print_separator
 
-    # Итого
+    # Total
     if [ "$all_tcp443_enabled" = "1" ]; then
-        print_warning "ВНИМАНИЕ: Весь HTTPS трафик обрабатывается!"
-        print_info "Чтобы выключить: sh z2k.sh menu → [A] Режим ALL TCP-443"
+        print_warning "ATTENTION: All HTTPS traffic is processed!"
+        print_info "To turn off: sh z2k.sh menu → [A] ALL TCP-443 mode"
     else
-        print_success "Режим работы: только списки доменов (рекомендуется)"
+        print_success "Operation mode: domain lists only (recommended)"
     fi
 }
 
-# Добавить домен в custom.txt
+# Add domain in cut.txt
 add_custom_domain() {
     local domain=$1
 
     if [ -z "$domain" ]; then
-        print_error "Укажите домен для добавления"
+        print_error "Specify the domain to add"
         return 1
     fi
 
     local custom_list="${LISTS_DIR}/custom.txt"
 
-    # Создать файл если не существует
+    # Create file if does not exist
     if [ ! -f "$custom_list" ]; then
         mkdir -p "$LISTS_DIR"
         touch "$custom_list"
     fi
 
-    # Проверить, не существует ли уже
+    # Check if it already exists
     if grep -qx "$domain" "$custom_list" 2>/dev/null; then
-        print_warning "Домен уже в списке: $domain"
+        print_warning "Domain is already in the list: $domain"
         return 0
     fi
 
-    # Добавить домен
+    # Add a domain
     echo "$domain" >> "$custom_list"
-    print_success "Добавлен домен: $domain"
+    print_success "Added domain: $domain"
 
     return 0
 }
 
-# Удалить домен из custom.txt
+# Remove the domain from custom.txt
 remove_custom_domain() {
     local domain=$1
     local custom_list="${LISTS_DIR}/custom.txt"
 
     if [ -z "$domain" ]; then
-        print_error "Укажите домен для удаления"
+        print_error "Specify the domain to delete"
         return 1
     fi
 
     if [ ! -f "$custom_list" ]; then
-        print_error "Файл custom.txt не найден"
+        print_error "File custom.txt not found"
         return 1
     fi
 
-    # Удалить домен
+    # Delete domain
     if grep -qx "$domain" "$custom_list"; then
         grep -vx "$domain" "$custom_list" > "${custom_list}.tmp"
         mv "${custom_list}.tmp" "$custom_list"
-        print_success "Удален домен: $domain"
+        print_success "Deleted domain: $domain"
     else
-        print_warning "Домен не найден в списке: $domain"
+        print_warning "Domain not found in the list: $domain"
     fi
 
     return 0
 }
 
-# Показать custom.txt
+# Specifies the custom.txt
 show_custom_domains() {
     local custom_list="${LISTS_DIR}/custom.txt"
 
-    print_header "Пользовательские домены"
+    print_header "Custom Domains"
 
     if [ ! -f "$custom_list" ]; then
-        print_info "Список пустой (файл не создан)"
+        print_info "The list is empty (the file has not been created)"
         return 0
     fi
 
@@ -387,9 +387,9 @@ show_custom_domains() {
     count=$(wc -l < "$custom_list" 2>/dev/null || echo "0")
 
     if [ "$count" -eq 0 ]; then
-        print_info "Список пустой"
+        print_info "The list is empty"
     else
-        print_info "Всего доменов: $count"
+        print_info "Total domains: $count"
         print_separator
         cat "$custom_list"
         print_separator
@@ -398,25 +398,25 @@ show_custom_domains() {
     return 0
 }
 
-# Очистить custom.txt
+# Signate the custom.txt
 clear_custom_domains() {
     local custom_list="${LISTS_DIR}/custom.txt"
 
     if [ ! -f "$custom_list" ]; then
-        print_info "Список уже пустой"
+        print_info "The list is already empty"
         return 0
     fi
 
-    printf "Очистить список пользовательских доменов? [y/N]: "
+    printf "Clear list of custom domains? [y/N]:"
     read -r answer </dev/tty
 
     case "$answer" in
         [Yy]|[Yy][Ee][Ss])
             > "$custom_list"
-            print_success "Список очищен"
+            print_success "List cleared"
             ;;
         *)
-            print_info "Отменено"
+            print_info "Cancelled"
             ;;
     esac
 
@@ -424,109 +424,109 @@ clear_custom_domains() {
 }
 
 # ==============================================================================
-# УПРАВЛЕНИЕ КОНФИГУРАЦИЕЙ
+# CONFIGURATION MANAGEMENT
 # ==============================================================================
 
-# Создать базовую конфигурацию zapret2
+# Create a basic zapret2 configuration
 create_base_config() {
-    print_info "Создание базовой конфигурации..."
+    print_info "Creating a basic configuration..."
 
     mkdir -p "$CONFIG_DIR" || {
-        print_error "Не удалось создать $CONFIG_DIR"
+        print_error "Failed to create $CONFIG_DIR"
         return 1
     }
 
-    # Копировать strategies.conf из рабочей директории
+    # Copy strategies.conf from working directory
     if [ -f "${WORK_DIR}/strategies.conf" ]; then
         cp "${WORK_DIR}/strategies.conf" "$STRATEGIES_CONF" || {
-            print_error "Не удалось скопировать strategies.conf"
+            print_error "Failed to copy strategies.conf"
             return 1
         }
-        print_success "Создан файл стратегий: $STRATEGIES_CONF"
+        print_success "Strategies file created: $STRATEGIES_CONF"
     fi
 
-    # Копировать quic_strategies.conf из рабочей директории
+    # Copy quic_strategies.conf from the working directory
     if [ -f "${WORK_DIR}/quic_strategies.conf" ]; then
         cp "${WORK_DIR}/quic_strategies.conf" "$QUIC_STRATEGIES_CONF" || {
-            print_error "Не удалось скопировать quic_strategies.conf"
+            print_error "Failed to copy quic_strategies.conf"
             return 1
         }
-        print_success "Создан файл QUIC стратегий: $QUIC_STRATEGIES_CONF"
+        print_success "The QUIC strategies file has been created: $QUIC_STRATEGIES_CONF"
     fi
 
-    # Создать файл для текущей стратегии
+    # Create a file for the current strategy
     touch "$CURRENT_STRATEGY_FILE"
 
-    # Создать файл для текущей QUIC стратегии
+    # Create a file for the current QUIC strategy
     if [ ! -f "$QUIC_STRATEGY_FILE" ]; then
         echo "QUIC_STRATEGY=24" > "$QUIC_STRATEGY_FILE"
     fi
 
-    # Создать файл для QUIC стратегии RuTracker
+    # Create a file for QUIC strategy RuTracker
     if [ ! -f "$RUTRACKER_QUIC_STRATEGY_FILE" ]; then
         echo "RUTRACKER_QUIC_STRATEGY=43" > "$RUTRACKER_QUIC_STRATEGY_FILE"
     fi
 
-    # Создать конфиг для включения/выключения QUIC RuTracker (по умолчанию выключено)
+    # Create a config to enable/disable QUIC RuTracker (disabled by default)
     local rutracker_quic_enabled_conf="${CONFIG_DIR}/rutracker_quic_enabled.conf"
     if [ ! -f "$rutracker_quic_enabled_conf" ]; then
         echo "RUTRACKER_QUIC_ENABLED=0" > "$rutracker_quic_enabled_conf"
-        print_success "RuTracker QUIC по умолчанию выключен"
+        print_success "RuTracker QUIC is disabled by default"
     fi
 
-    # Удалить старый файл QUIC стратегий по категориям (больше не используется)
+    # Delete old QUIC strategy file by category (no longer used)
     local quic_category_conf="${CONFIG_DIR}/quic_category_strategies.conf"
     if [ -f "$quic_category_conf" ]; then
         rm -f "$quic_category_conf"
     fi
 
-    # Создать конфиг для режима ALL_TCP443 (без хостлистов)
+    # Create a config for the ALL_TCP443 mode (without hostlists)
     local all_tcp443_conf="${CONFIG_DIR}/all_tcp443.conf"
     if [ ! -f "$all_tcp443_conf" ]; then
         cat > "$all_tcp443_conf" <<'EOF'
-# Режим работы по ВСЕМ доменам TCP-443 без хостлистов
-# ВНИМАНИЕ: Этот режим применяет стратегию ко всему трафику HTTPS
-# Может замедлить соединения, но обходит любые блокировки
+# Operation mode for ALL TCP-443 domains without hostlists
+# WARNING: This mode applies the policy to all HTTPS traffic
+# May slow down connections, but bypasses any blockages
 
-# Включить режим: 1 = включен, 0 = выключен
+# Enable mode: 1 = enabled, 0 = disabled
 ENABLED=0
 
-# Номер стратегии для применения (1-199)
+# Strategy number to apply (1-199)
 STRATEGY=1
 EOF
-        print_success "Создан конфиг режима ALL_TCP443"
+        print_success "The ALL_TCP443 mode config has been created"
     fi
 
-    # Создать директорию для списков если не существует
+    # Create a directory for lists if it does not exist
     if ! mkdir -p "$LISTS_DIR" 2>/dev/null; then
-        print_error "Не удалось создать директорию: $LISTS_DIR"
-        print_info "Проверьте права доступа"
+        print_error "Failed to create directory: $LISTS_DIR"
+        print_info "Check permissions"
         return 1
     fi
 
-    # Проверить что директория действительно существует
+    # Check that the directory really exists
     if [ ! -d "$LISTS_DIR" ]; then
-        print_error "Директория не существует: $LISTS_DIR"
+        print_error "Directory does not exist: $LISTS_DIR"
         return 1
     fi
 
-    # Создать whitelist для исключения критичных сервисов
+    # Create a whitelist to exclude critical services
     local whitelist="${LISTS_DIR}/whitelist.txt"
     if [ ! -f "$whitelist" ]; then
         cat > "$whitelist" <<'EOF'
-# Whitelist - домены исключенные из обработки zapret2
-# Сервисы, которые могут работать некорректно с DPI bypass
+# Whitelist - domains excluded from processing by zapret2
+# Services that may not work correctly with DPI bypass
 
-# Социальные сети и медиа
+# Social networks and media
 pinterest.com
 vkvideo.ru
 vk.com
 rutube.ru
 
-# E-commerce и объявления
+# E-commerce and ads
 avito.ru
 
-# Стриминг
+# Streaming
 netflix.com
 vsetop.org
 twitch.tv
@@ -547,59 +547,59 @@ steampowered.com
 tarkov.com
 escapefromtarkov.com
 
-# Мониторинг и CDN
+# Monitoring and CDN
 browser-intake-datadoghq.com
 datadoghq.com
 okcdn.ru
 api.mycdn.me
 
-# Госуслуги
+# Public services
 gosuslugi.ru
 
-# Разработка
+# Development
 raw.githubusercontent.com
 EOF
 
-        # Проверить что файл действительно создался
+        # Check that the file was actually created
         if [ ! -f "$whitelist" ]; then
-            print_error "Не удалось создать whitelist: $whitelist"
-            print_info "Проверьте права доступа к директории"
+            print_error "Failed to create whitelist: $whitelist"
+            print_info "Check directory permissions"
             return 1
         fi
 
-        print_success "Создан whitelist: $whitelist"
+        print_success "Whitelist created: $whitelist"
     fi
 
-    print_success "Базовая конфигурация создана"
+    print_success "Basic configuration created"
     return 0
 }
 
-# Показать текущую конфигурацию
+# Show current configuration
 show_current_config() {
-    print_header "Текущая конфигурация"
+    print_header "Current configuration"
 
-    printf "%-25s: %s\n" "Директория zapret2" "$ZAPRET2_DIR"
-    printf "%-25s: %s\n" "Директория конфига" "$CONFIG_DIR"
-    printf "%-25s: %s\n" "Директория списков" "$LISTS_DIR"
-    printf "%-25s: %s\n" "Init скрипт" "$INIT_SCRIPT"
+    printf "%-25s: %s\n" "Directory zapret2" "$ZAPRET2_DIR"
+    printf "%-25s: %s\n" "Directory config" "$CONFIG_DIR"
+    printf "%-25s: %s\n" "Lists directory" "$LISTS_DIR"
+    printf "%-25s: %s\n" "Init script" "$INIT_SCRIPT"
 
     print_separator
 
-    printf "%-25s: %s\n" "Статус сервиса" "$(get_service_status)"
-    printf "%-25s: #%s\n" "Текущая стратегия" "$(get_current_strategy)"
+    printf "%-25s: %s\n" "Service status" "$(get_service_status)"
+    printf "%-25s: #%s\n" "Current strategy" "$(get_current_strategy)"
 
     if [ -f "$STRATEGIES_CONF" ]; then
         local count
         count=$(get_strategies_count)
-        printf "%-25s: %s\n" "Всего стратегий" "$count"
+        printf "%-25s: %s\n" "Total strategies" "$count"
     else
-        printf "%-25s: %s\n" "Всего стратегий" "не установлено"
+        printf "%-25s: %s\n" "Total strategies" "not installed"
     fi
 
     if [ -f "$QUIC_STRATEGIES_CONF" ]; then
         local qcount
         qcount=$(get_quic_strategies_count)
-        printf "%-25s: %s\n" "QUIC стратегий" "$qcount"
+        printf "%-25s: %s\n" "QUIC strategies" "$qcount"
     fi
 
     if [ -f "$QUIC_STRATEGY_FILE" ]; then
@@ -611,104 +611,104 @@ show_current_config() {
 
     print_separator
 
-    # Списки доменов
+    # Domain Lists
     if [ -d "$LISTS_DIR" ]; then
-        print_info "Списки доменов:"
+        print_info "Domain lists:"
         for list in discord.txt youtube.txt rkn.txt custom.txt; do
             if [ -f "${LISTS_DIR}/${list}" ]; then
                 local count
                 count=$(wc -l < "${LISTS_DIR}/${list}" 2>/dev/null || echo "0")
-                printf "  %-20s: %s доменов\n" "$list" "$count"
+                printf "%-20s: %s domains\n" "$list" "$count"
             fi
         done
         local yt_quic_list="${ZAPRET2_DIR}/extra_strats/UDP/YT/List.txt"
         if [ -f "$yt_quic_list" ]; then
             local yt_quic_count
             yt_quic_count=$(wc -l < "$yt_quic_list" 2>/dev/null || echo "0")
-            printf "  %-20s: %s доменов\n" "extra_strats/UDP/YT/List.txt" "$yt_quic_count"
+            printf "%-20s: %s domains\n" "extra_strats/UDP/YT/List.txt" "$yt_quic_count"
         fi
         local rt_quic_list="${ZAPRET2_DIR}/extra_strats/UDP/RUTRACKER/List.txt"
         if [ -f "$rt_quic_list" ]; then
             local rt_quic_count
             rt_quic_count=$(wc -l < "$rt_quic_list" 2>/dev/null || echo "0")
-            printf "  %-20s: %s доменов\n" "extra_strats/UDP/RUTRACKER/List.txt" "$rt_quic_count"
+            printf "%-20s: %s domains\n" "extra_strats/UDP/RUTRACKER/List.txt" "$rt_quic_count"
         fi
     else
-        print_info "Списки доменов: не установлены"
+        print_info "Domain lists: not installed"
     fi
 
     print_separator
 }
 
-# Сбросить конфигурацию к defaults
+# Reset configuration to defaults
 reset_config() {
-    print_header "Сброс конфигурации"
+    print_header "Reset configuration"
 
-    print_warning "Это удалит:"
-    print_warning "  - Текущую стратегию"
-    print_warning "  - Пользовательские домены (custom.txt)"
-    print_warning "Списки discord/youtube НЕ будут удалены"
+    print_warning "This will remove:"
+    print_warning "- Current strategy"
+    print_warning "- Custom domains (custom.txt)"
+    print_warning "Discord/youtube lists will NOT be deleted"
 
-    printf "\nПродолжить сброс? [y/N]: "
+    printf "\nContinue reset? [y/N]:"
     read -r answer </dev/tty
 
     case "$answer" in
         [Yy]|[Yy][Ee][Ss])
-            # Очистить текущую стратегию
+            # Clear current strategy
             if [ -f "$CURRENT_STRATEGY_FILE" ]; then
                 rm -f "$CURRENT_STRATEGY_FILE"
-                print_info "Сброшена текущая стратегия"
+                print_info "Current strategy reset"
             fi
 
-            # Очистить custom.txt
+            # Signate the custom.txt
             if [ -f "${LISTS_DIR}/custom.txt" ]; then
                 > "${LISTS_DIR}/custom.txt"
-                print_info "Очищен список пользовательских доменов"
+                print_info "Cleared the list of custom domains"
             fi
 
-            print_success "Конфигурация сброшена"
+            print_success "Configuration reset"
 
-            # Предложить перезапуск
+            # Suggest restart
             if is_zapret2_running; then
-                printf "\nПерезапустить сервис? [Y/n]: "
+                printf "\nRestart the service? [Y/n]:"
                 read -r restart_answer </dev/tty
 
                 case "$restart_answer" in
                     [Nn]|[Nn][Oo])
-                        print_info "Сервис не перезапущен"
+                        print_info "The service has not been restarted"
                         ;;
                     *)
                         "$INIT_SCRIPT" restart
-                        print_success "Сервис перезапущен"
+                        print_success "Service restarted"
                         ;;
                 esac
             fi
             ;;
         *)
-            print_info "Отменено"
+            print_info "Cancelled"
             ;;
     esac
 
     return 0
 }
 
-# Создать backup конфигурации
+# Create backup configuration
 backup_config() {
     local backup_dir="${CONFIG_DIR}/backups"
     local timestamp
     timestamp=$(date +%Y%m%d_%H%M%S)
     local backup_file="${backup_dir}/config_backup_${timestamp}.tar.gz"
 
-    print_header "Создание резервной копии"
+    print_header "Creating a Backup"
 
     mkdir -p "$backup_dir" || {
-        print_error "Не удалось создать директорию backup"
+        print_error "Failed to create backup directory"
         return 1
     }
 
-    print_info "Создание архива..."
+    print_info "Creating an archive..."
 
-    # Создать tar.gz с конфигурацией
+    # Create tar.gz with configuration
     tar -czf "$backup_file" \
         -C "$CONFIG_DIR" \
         strategies.conf \
@@ -720,70 +720,70 @@ backup_config() {
     if [ -f "$backup_file" ]; then
         local size
         size=$(du -h "$backup_file" | cut -f1)
-        print_success "Backup создан: $backup_file ($size)"
+        print_success "Backup created: $backup_file ($size)"
         return 0
     else
-        print_error "Не удалось создать backup"
+        print_error "Failed to create backup"
         return 1
     fi
 }
 
-# Восстановить конфигурацию из backup
+# Restore configuration from backup
 restore_config() {
     local backup_dir="${CONFIG_DIR}/backups"
 
-    print_header "Восстановление конфигурации"
+    print_header "Restoring the configuration"
 
     if [ ! -d "$backup_dir" ]; then
-        print_error "Директория backups не найдена"
+        print_error "Directory backups not found"
         return 1
     fi
 
-    # Найти последний backup
+    # Find the latest backup
     local latest_backup
     latest_backup=$(ls -t "${backup_dir}"/config_backup_*.tar.gz 2>/dev/null | head -n 1)
 
     if [ -z "$latest_backup" ]; then
-        print_error "Резервные копии не найдены"
+        print_error "No backups found"
         return 1
     fi
 
-    print_info "Последний backup: $latest_backup"
-    printf "Восстановить? [y/N]: "
+    print_info "Latest backup: $latest_backup"
+    printf "Restore? [y/N]:"
     read -r answer </dev/tty
 
     case "$answer" in
         [Yy]|[Yy][Ee][Ss])
-            print_info "Восстановление..."
+            print_info "Recovery..."
 
-            # Извлечь backup
+            # Extract backup
             tar -xzf "$latest_backup" -C "$CONFIG_DIR" 2>/dev/null
 
             if [ $? -eq 0 ]; then
-                print_success "Конфигурация восстановлена"
+                print_success "Configuration restored"
 
-                # Предложить перезапуск
+                # Suggest restart
                 if is_zapret2_running; then
-                    printf "Перезапустить сервис? [Y/n]: "
+                    printf "Restart the service? [Y/n]:"
                     read -r restart_answer </dev/tty
 
                     case "$restart_answer" in
                         [Nn]|[Nn][Oo])
-                            print_info "Сервис не перезапущен"
+                            print_info "The service has not been restarted"
                             ;;
                         *)
                             "$INIT_SCRIPT" restart
-                            print_success "Сервис перезапущен"
+                            print_success "Service restarted"
                             ;;
                     esac
                 fi
             else
-                print_error "Ошибка восстановления"
+                print_error "Restore Error"
                 return 1
             fi
             ;;
         *)
-            print_info "Отменено"
+            print_info "Cancelled"
             ;;
     esac
 
@@ -791,7 +791,7 @@ restore_config() {
 }
 
 # ==============================================================================
-# ЭКСПОРТ ФУНКЦИЙ
+# EXPORTING FUNCTIONS
 # ==============================================================================
 
-# Все функции доступны после source этого файла
+# All functions are available after the source of this file

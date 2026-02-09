@@ -1,67 +1,67 @@
-# z2k v2.0 - Zapret2 для Keenetic (ALPHA TEST)
+# Z2k v2.0 - Zapret2 Agricultural (ALPHA TEST)
 
-Проект в активной разработке. Статус: alpha test. Возможны баги и изменения без обратной совместимости.
+The project is under active development. Status: alpha test. Possible bugs and changes without backward compatibility.
 
-Поддержать проект:
+Support the project:
 
 - TON: `UQA6Y6Mf1Qge2dVSl3_vSqb29SKrhI8VgJtoRBjgp08oB8QY`
 - USDT (ERC20): `0xA1D6d7d339f05C1560ecAF0c5CB8c4dc80Dc46A9`
 
 Если нужно максимально простое и проверенное решение, посмотрите также: https://github.com/IndeecFOX/zapret4rocket
 
-Важно: после установки по умолчанию применяются autocircular стратегии. Им нужно время и несколько попыток, чтобы подстроиться под DPI. Если сайт не открывается сразу, откройте его и дайте странице несколько раз перезагрузиться - параметры перебираются, и после этого сайт обычно начинает открываться.
+Important: After installation, autocircular strategies are applied by default. They need time and several attempts to adjust to the DPI. If the site does not open right away, open it and let the page reload several times - the parameters are sorted out, and after that the site usually starts to open.
 
 ---
 
-## Что это
+## What is this
 
-z2k - модульный установщик zapret2 для роутеров Keenetic с Entware.
+z2k is a modular zapret2 installer for Keenetic routers with Entware.
 
-Цель проекта: максимально упростить установку zapret2 на Keenetic и дать рабочий набор стратегий с автоподбором (autocircular) и поддержкой IPv6 там, где это возможно.
+The goal of the project: to simplify the installation of zapret2 on Keenetic as much as possible and provide a working set of strategies with auto-selection (autocircular) and IPv6 support where possible.
 
 ---
 
-## Особенности (актуально)
+## Features (current)
 
-- Установка zapret2 (openwrt-embedded релиз) без компиляции, с проверкой работоспособности `nfqws2`
-- Генерация и применение стратегий под категории:
+- Installation of zapret2 (openwrt-embedded release) without compilation, with `nfqws2` functionality check
+- Generation and application of strategies under categories:
   - RKN (TCP/TLS)
   - YouTube TCP (TLS)
   - Googlevideo (TCP/TLS)
-  - YouTube QUIC (UDP/443) по доменному списку
-  - Discord (TCP/UDP) отдельными профилями
+  - YouTube QUIC (UDP/443) by domain list
+  - Discord (TCP/UDP) with separate profiles
 - Hostlist и autohostlist:
-  - hostlist для выборочного применения (не "на весь интернет")
-  - поддержка `--hostlist-auto` для TCP-профилей
+  - hostlist for selective use (not “for the entire Internet”)
+  - `--hostlist-auto` support for TCP profiles
 - IPv6:
-  - автоопределение доступности IPv6 на роутере и включение правил (iptables/ip6tables), если возможно
-  - если IPv6 не поддерживается/не настроен - IPv6 правила не включаются
-- Списки доменов устанавливаются автоматически (источник: zapret4rocket)
+  - auto-detection of IPv6 availability on the router and enabling rules (iptables/ip6tables), if possible
+  - if IPv6 is not supported/not configured - IPv6 rules are not enabled
+- Domain lists are installed automatically (source: zapret4rocket)
 
 ---
 
-## Установка
+## Installation
 
-### 1) Требования к прошивке Keenetic (обязательно)
+### 1) Requirements for Keenetic firmware (required)
 
-Перед установкой zapret2 в веб-интерфейсе Keenetic нужно установить компоненты:
+Before installing zapret2 in the Keenetic web interface, you need to install the following components:
 
-1) "Протокол IPv6"
-2) "Модули ядра подсистемы Netfilter" (появляется только после выбора компонента "Протокол IPv6")
+1) "IPv6 protocol"
+2) “Netfilter subsystem kernel modules” (appears only after selecting the “IPv6 Protocol” component)
 
-### 2) Подготовка USB и установка Entware (обязательно)
+### 2) Preparing USB and installing Entware (required)
 
-Подготовьте USB-накопитель и установите Entware по официальной инструкции Keenetic:
+Prepare a USB drive and install Entware according to the official Keenetic instructions:
 https://help.keenetic.com/hc/ru/articles/360021214160-%D0%A3%D1%81%D1%82%D0%B0%D0%BD%D0%BE%D0%B2%D0%BA%D0%B0-%D1%81%D0%B8%D1%81%D1%82%D0%B5%D0%BC%D1%8B-%D0%BF%D0%B0%D0%BA%D0%B5%D1%82%D0%BE%D0%B2-%D1%80%D0%B5%D0%BF%D0%BE%D0%B7%D0%B8%D1%82%D0%BE%D1%80%D0%B8%D1%8F-Entware-%D0%BD%D0%B0-USB-%D0%BD%D0%B0%D0%BA%D0%BE%D0%BF%D0%B8%D1%82%D0%B5%D0%BB%D1%8C
 
-После установки Entware выполните обновление индекса пакетов и установите зависимости:
+After installing Entware, update the package index and install dependencies:
 
 ```bash
 opkg update
 opkg install coreutils-sort curl grep gzip ipset iptables kmod_ndms xtables-addons_legacy
 ```
 
-### 3) Установка z2k (Zapret2 для Keenetic)
+### 3) Installing z2k (Zapret2 for Keenetic)
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/necronicle/z2k/master/z2k.sh | sh
@@ -69,25 +69,25 @@ curl -fsSL https://raw.githubusercontent.com/necronicle/z2k/master/z2k.sh | sh
 
 ---
 
-## Что делает установщик (в общих чертах)
+## What does the installer do (in general)
 
-- Проверяет окружение (Entware, зависимости, архитектуру).
+- Checks the environment (Entware, dependencies, architecture).
 - Устанавливает zapret2 в `/opt/zapret2` и ставит init-скрипт `/opt/etc/init.d/S99zapret2`.
-- Скачивает/обновляет доменные списки.
-- Генерирует и применяет дефолтные стратегии с автоподбором (autocircular) для ключевых категорий.
-- Включает IPv6 правила, если IPv6 реально доступен и доступен backend (ip6tables/nft).
+- Downloads/updates domain lists.
+- Generates and applies default strategies with autocircular selection for key categories.
+- Enables IPv6 rules if IPv6 is actually available and the backend is available (ip6tables/nft).
 
 ---
 
-## Использование
+## Usage
 
-### Повторный запуск установщика
+### Rerunning the installer
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/necronicle/z2k/master/z2k.sh | sh
 ```
 
-### Управление сервисом zapret2
+### Management of the service ban2
 
 ```bash
 /opt/etc/init.d/S99zapret2 start
@@ -96,7 +96,7 @@ curl -fsSL https://raw.githubusercontent.com/necronicle/z2k/master/z2k.sh | sh
 /opt/etc/init.d/S99zapret2 status
 ```
 
-### Обновление списков вручную
+### Manually updating lists
 
 ```bash
 /opt/zapret2/ipset/get_config.sh
@@ -104,13 +104,13 @@ curl -fsSL https://raw.githubusercontent.com/necronicle/z2k/master/z2k.sh | sh
 
 ---
 
-## Примечания
+## Notes
 
-- Если вы используете IPv6 в сети, убедитесь что он включен в прошивке (см. требования выше). Установщик пытается включить IPv6 правила автоматически, но при отсутствии IPv6 маршрута/адреса IPv6 будет отключен.
-- Если в системе нет `cron`, автообновление списков может быть недоступно - обновляйте списки вручную.
+- If you are using IPv6 on your network, make sure it is enabled in the firmware (see requirements above). The installer tries to enable IPv6 rules automatically, but if there is no IPv6 route/address, IPv6 will be disabled.
+- If the system does not have `cron`, automatic updating of lists may not be available - update the lists manually.
 
 ---
 
-## Лицензия
+## License
 
 MIT

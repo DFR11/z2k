@@ -1,36 +1,36 @@
 #!/bin/sh
-# Keenetic NDM netfilter hook для автоматического восстановления правил zapret2
+# Keenetic NDM netfilter hook for automatic recovery of zapret2 rules
 # Устанавливается в: /opt/etc/ndm/netfilter.d/000-zapret2.sh
 #
-# Этот скрипт вызывается системой Keenetic при изменениях в netfilter (iptables).
-# Когда происходит переподключение к интернету, изменение настроек сети или
-# другие события - правила iptables сбрасываются, и этот хук восстанавливает их.
+# This script is called by the Keenetic system when there are changes in netfilter (iptables).
+# When you reconnect to the Internet, change network settings, or
+# other events - iptables rules are reset and this hook restores them.
 
-# Переменные окружения от NDM:
-# $table - имя таблицы iptables (filter, nat, mangle, raw)
-# $type - тип события (add, del, etc)
+# Environment variables from NDM:
+# $table - iptables table name (filter, nat, mangle, raw)
+# $type - event type (add, del, etc)
 
 INIT_SCRIPT="/opt/etc/init.d/S99zapret2"
 
-# Обрабатываем только изменения в таблице mangle
-# (zapret2 использует mangle таблицу для NFQUEUE)
+# We process only changes in the mangle table
+# (zapret2 uses mangle table for NFQUEUE)
 [ "$table" != "mangle" ] && exit 0
 
-# Проверить что init скрипт существует
+# Check that the init script exists
 [ ! -f "$INIT_SCRIPT" ] && exit 0
 
-# Проверить что zapret2 включен
+# Check that zapret2 is enabled
 if ! grep -q "^ENABLED=yes" "$INIT_SCRIPT" 2>/dev/null; then
     exit 0
 fi
 
-# Логирование (опционально, раскомментируйте для отладки)
+# Logging (optional, uncomment for debugging)
 # logger -t zapret2-hook "Netfilter hook triggered: table=$table, type=$type"
 
-# Небольшая задержка для стабильности
+# Slight delay for stability
 sleep 2
 
-# Перезапустить правила zapret2
+# Restart zapret2 rules
 "$INIT_SCRIPT" restart >/dev/null 2>&1 &
 
 exit 0

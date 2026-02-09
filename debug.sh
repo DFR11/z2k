@@ -1,107 +1,107 @@
 #!/bin/sh
-# debug.sh - Диагностика модулей ядра для z2k на Keenetic
+# debug.sh - Diagnostics of kernel modules for z2k on Keenetic
 
 echo "+==================================================+"
-echo "|  z2k - Диагностика модулей ядра                 |"
+echo "|  z2k - Kernel module diagnostics |"
 echo "+==================================================+"
 echo ""
 
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "1. ИНФОРМАЦИЯ О СИСТЕМЕ"
+echo "1. SYSTEM INFORMATION"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "Архитектура: $(uname -m)"
-echo "Ядро: $(uname -r)"
-echo "Версия Keenetic: $(cat /etc/version 2>/dev/null || echo 'не определена')"
+echo "Architecture: $(uname -m)"
+echo "Kernel: $(uname -r)"
+echo "В#rowsρ really jeanet: $(cat /test 2>/ve/vell |'не определена')"
 echo ""
 
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "2. ДИРЕКТОРИИ С МОДУЛЯМИ"
+echo "2. DIRECTORIES WITH MODULES"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "Системные модули:"
-ls -la /lib/modules/ 2>/dev/null || echo "Директория не существует"
+echo "System modules:"
+ls -la /lib/modules/ 2>/dev/null || echo "Directory does not exist"
 echo ""
 
-echo "Entware модули:"
-ls -la /opt/lib/modules/ 2>/dev/null || echo "Директория не существует"
+echo "Entware Modules:"
+ls -la /opt/lib/modules/ 2>/dev/null || echo "Directory does not exist"
 echo ""
 
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "3. НАЛИЧИЕ ФАЙЛОВ МОДУЛЕЙ"
+echo "3. AVAILABILITY OF MODULE FILES"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 for mod in xt_NFQUEUE xt_multiport xt_connbytes nfnetlink_queue; do
-    echo "Модуль: $mod"
-    find /lib/modules/ -name "${mod}.ko" 2>/dev/null || echo "  Файл не найден"
+    echo "Module: $mod"
+    find /lib/modules/ -name "${mod}.ko" 2>/dev/null || echo "File not found"
 done
 echo ""
 
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "4. ЗАГРУЖЕННЫЕ МОДУЛИ (lsmod)"
+echo "4. LOADED MODULES (lsmod)"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "Все netfilter модули:"
+echo "All netfilter modules:"
 lsmod | grep -E 'nf|xt_' | head -20
 echo ""
-echo "Интересующие нас модули:"
+echo "Modules we are interested in:"
 for mod in xt_NFQUEUE xt_multiport xt_connbytes nfnetlink_queue; do
     if lsmod | grep -q "^${mod} "; then
-        echo "  [OK] $mod загружен"
+        echo "[OK] $mod loaded"
     else
-        echo "  [FAIL] $mod НЕ загружен"
+        echo "[FAIL] $mod NOT loaded"
     fi
 done
 echo ""
 
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "5. ВЕРСИИ MODPROBE"
+echo "5. MODPROBE VERSIONS"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "Системный modprobe:"
+echo "System modprobe:"
 which /sbin/modprobe && /sbin/modprobe --version 2>&1 | head -3
 echo ""
 echo "Entware modprobe:"
 which /opt/sbin/modprobe && /opt/sbin/modprobe --version 2>&1 | head -3
 echo ""
-echo "Дефолтный modprobe:"
+echo "Default modprobe:"
 which modprobe && modprobe --version 2>&1 | head -3
 echo ""
 
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "6. ПОПЫТКА ЗАГРУЗКИ ЧЕРЕЗ /sbin/modprobe"
+echo "6. ATTEMPT TO LOAD VIA /sbin/modprobe"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 for mod in xt_NFQUEUE xt_multiport xt_connbytes; do
-    echo "Попытка загрузки: $mod"
+    echo "Load attempt: $mod"
     /sbin/modprobe "$mod" 2>&1
     echo "Exit code: $?"
     echo ""
 done
 
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "7. ПОПЫТКА ЗАГРУЗКИ ЧЕРЕЗ insmod"
+echo "7. ATTEMPTING TO LOAD VIA insmod"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 kernel_ver=$(uname -r)
 mod_path="/lib/modules/${kernel_ver}"
 
-echo "Путь к модулям: $mod_path"
+echo "Path to modules: $mod_path"
 echo ""
 
 for mod in xt_NFQUEUE.ko xt_multiport.ko xt_connbytes.ko; do
     mod_file=$(find "$mod_path" -name "$mod" 2>/dev/null | head -1)
     if [ -n "$mod_file" ]; then
-        echo "Попытка загрузки: $mod_file"
+        echo "Load attempt: $mod_file"
         /sbin/insmod "$mod_file" 2>&1
         echo "Exit code: $?"
     else
-        echo "Файл $mod не найден"
+        echo "$mod file not found"
     fi
     echo ""
 done
 
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "8. DMESG (последние 30 строк)"
+echo "8. DMESG (last 30 lines)"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 dmesg | tail -30
 echo ""
 
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "9. ПРОВЕРКА ЗАВИСИМОСТЕЙ"
+echo "9. CHECKING DEPENDENCIES"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo "ip_tables:"
 lsmod | grep ip_tables
@@ -124,13 +124,13 @@ for mod in xt_NFQUEUE xt_multiport xt_connbytes; do
     exitcode=$?
     echo "Exit code: $exitcode"
 
-    # Проверить загрузился ли
+    # Check if it has loaded
     if lsmod | grep -q "^${mod} "; then
-        echo "[OK] Модуль $mod успешно загружен!"
+        echo "[OK] Module $mod loaded successfully!"
     else
-        echo "[FAIL] Модуль $mod НЕ загрузился"
-        # Показать последние строки dmesg
-        echo "Последние сообщения ядра:"
+        echo "[FAIL] Module $mod NOT loaded"
+        # Show last lines of dmesg
+        echo "Latest kernel messages:"
         dmesg | tail -5
     fi
     echo ""
@@ -141,7 +141,7 @@ echo "11. ПОПЫТКА ЗАГРУЗКИ ЧЕРЕЗ /opt/sbin/modprobe -d"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 kernel_ver=$(uname -r)
 mod_dir="/lib/modules/${kernel_ver}"
-echo "Директория модулей: $mod_dir"
+echo "Modules directory: $mod_dir"
 echo ""
 
 for mod in xt_NFQUEUE xt_multiport xt_connbytes; do
@@ -150,38 +150,38 @@ for mod in xt_NFQUEUE xt_multiport xt_connbytes; do
     exitcode=$?
     echo "Exit code: $exitcode"
 
-    # Проверить загрузился ли
+    # Check if it has loaded
     if lsmod | grep -q "^${mod} "; then
-        echo "[OK] Модуль $mod успешно загружен!"
+        echo "[OK] Module $mod loaded successfully!"
     else
-        echo "[FAIL] Модуль $mod НЕ загрузился"
+        echo "[FAIL] Module $mod NOT loaded"
     fi
     echo ""
 done
 
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "12. ФИНАЛЬНОЕ СОСТОЯНИЕ МОДУЛЕЙ"
+echo "12. FINAL STATE OF MODULES"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "Загруженные модули:"
+echo "Loaded modules:"
 lsmod | grep -E 'xt_NFQUEUE|xt_multiport|xt_connbytes|nfnetlink_queue'
 echo ""
 
-echo "Проверка каждого модуля:"
+echo "Checking each module:"
 for mod in xt_NFQUEUE xt_multiport xt_connbytes nfnetlink_queue; do
     if lsmod | grep -q "^${mod} "; then
-        echo "  [OK] $mod загружен"
+        echo "[OK] $mod loaded"
     else
-        echo "  [FAIL] $mod НЕ загружен"
+        echo "[FAIL] $mod NOT loaded"
     fi
 done
 echo ""
 
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "13. ПОСЛЕДНИЕ СООБЩЕНИЯ DMESG"
+echo "13. LATEST DMESG POSTS"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 dmesg | tail -20
 echo ""
 
 echo "+==================================================+"
-echo "|  Диагностика завершена                          |"
+echo "|  Diagnostics completed |"
 echo "+==================================================+"

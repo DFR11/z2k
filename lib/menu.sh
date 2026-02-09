@@ -1,18 +1,18 @@
 #!/bin/sh
-# lib/menu.sh - Интерактивное меню управления z2k
-# 9 опций для полного управления zapret2
+# lib/menu.sh - Interactive z2k control menu
+# 9 options for complete control of zapret2
 
 # ==============================================================================
-# ВСПОМОГАТЕЛЬНАЯ ФУНКЦИЯ ДЛЯ ЧТЕНИЯ ВВОДА
+# AUXILIARY FUNCTION FOR READING INPUT
 # ==============================================================================
 
-# Читать ввод пользователя (работает даже когда stdin перенаправлен через pipe)
+# Read user input (works even when stdin is redirected via pipe)
 read_input() {
     read -r "$@" </dev/tty
 }
 
 # ==============================================================================
-# ГЛАВНОЕ МЕНЮ
+# MAIN MENU
 # ==============================================================================
 
 show_main_menu() {
@@ -27,34 +27,34 @@ show_main_menu() {
 
 MENU
 
-        # Показать текущий статус
+        # Show current status
         printf "\n"
-        printf " Состояние: %s\n" "$(is_zapret2_installed && echo 'Установлен' || echo 'Не установлен')"
+        printf "Status: %s\n" "$(is_zapret2_installed && echo 'Установлен' || echo 'Не установлен')"
 
         if is_zapret2_installed; then
-            printf " Сервис: %s\n" "$(get_service_status)"
+            printf "Service: %s\n" "$(get_service_status)"
 
-            # Проверить режим стратегий
+            # Check strategy mode
             if [ -f "$CATEGORY_STRATEGIES_CONF" ]; then
                 local count
                 count=$(grep -c ":" "$CATEGORY_STRATEGIES_CONF" 2>/dev/null || echo 0)
-                printf " Стратегии: %s категорий\n" "$count"
+                printf "Strategies: %s categories\n" "$count"
             else
-                printf " Текущая стратегия: #%s\n" "$(get_current_strategy)"
+                printf "Current strategy: #%s\n" "$(get_current_strategy)"
             fi
 
-            # Проверить режим ALL TCP-443
+            # Check ALL TCP-443 mode
             local all_tcp443_conf="${CONFIG_DIR}/all_tcp443.conf"
             if [ -f "$all_tcp443_conf" ]; then
                 . "$all_tcp443_conf"
                 if [ "$ENABLED" = "1" ]; then
-                    printf " ALL TCP-443: Включен (стратегия #%s)\n" "$STRATEGY"
+                    printf "ALL TCP-443: On (strategy #%s)\n" "$STRATEGY"
                 fi
             fi
 
-            # Статус QUIC RuTracker
+            # QUIC RuTracker status
             if is_rutracker_quic_enabled; then
-                printf " RuTracker QUIC: Включен\n"
+                printf "RuTracker QUIC: Enabled\n"
             fi
         fi
 
@@ -74,7 +74,7 @@ MENU
 
 MENU
 
-        printf "Выберите опцию [0-9,A,Q,W]: "
+        printf "Select option [0-9,A,Q,W]:"
         read_input choice
 
         case "$choice" in
@@ -109,11 +109,11 @@ MENU
                 menu_whitelist
                 ;;
             0)
-                print_info "Выход из меню"
+                print_info "Exit menu"
                 return 0
                 ;;
             *)
-                print_error "Неверный выбор: $choice"
+                print_error "Wrong choice: $choice"
                 pause
                 ;;
         esac
@@ -121,16 +121,16 @@ MENU
 }
 
 # ==============================================================================
-# ПОДМЕНЮ: УСТАНОВКА
+# SUBMENU: INSTALLATION
 # ==============================================================================
 
 menu_install() {
     clear_screen
-    print_header "[1] Установка/Переустановка zapret2"
+    print_header "[1] Installing/Reinstalling zapret2"
 
     if is_zapret2_installed; then
-        print_warning "zapret2 уже установлен"
-        printf "\nПереустановить? [y/N]: "
+        print_warning "lock2 is already installed"
+        printf "\nReinstall? [y/N]:"
         read_input answer
 
         case "$answer" in
@@ -138,7 +138,7 @@ menu_install() {
                 run_full_install
                 ;;
             *)
-                print_info "Установка отменена"
+                print_info "Installation canceled"
                 ;;
         esac
     else
@@ -149,23 +149,23 @@ menu_install() {
 }
 
 # ==============================================================================
-# ПОДМЕНЮ: ВЫБОР СТРАТЕГИИ
+# SUBMENU: STRATEGY SELECTION
 # ==============================================================================
 
 menu_select_strategy() {
     clear_screen
-    print_header "[2] Выбор стратегии по категориям"
+    print_header "[2] Selecting a strategy by category"
 
     if ! is_zapret2_installed; then
-        print_error "zapret2 не установлен"
-        print_info "Сначала выполните установку (опция 1)"
+        print_error "lock2 is not installed"
+        print_info "Install first (option 1)"
         pause
         return
     fi
 
     local total_count
     total_count=$(get_strategies_count)
-    # Прочитать текущие стратегии
+    # Read current strategies
     local config_file="${CONFIG_DIR}/category_strategies.conf"
     local current_yt_tcp="1"
     local current_yt_gv="1"
@@ -180,9 +180,9 @@ menu_select_strategy() {
         [ -z "$current_rkn" ] && current_rkn="1"
     fi
 
-    print_info "Всего доступно стратегий: $total_count"
+    print_info "Total strategies available: $total_count"
     print_separator
-    print_info "Текущие стратегии:"
+    print_info "Current strategies:"
     printf "  YouTube TCP: #%s\n" "$current_yt_tcp"
     printf "  YouTube GV:  #%s\n" "$current_yt_gv"
     printf "  RKN:         #%s\n" "$current_rkn"
@@ -190,7 +190,7 @@ menu_select_strategy() {
     printf "  QUIC RuTracker:  #%s\n" "$(get_rutracker_quic_strategy)"
     print_separator
 
-    # Подменю выбора категории
+    # Category selection submenu
     cat <<'SUBMENU'
 
 Выберите категорию для изменения стратегии:
@@ -203,7 +203,7 @@ menu_select_strategy() {
 [B] Назад
 
 SUBMENU
-    printf "Ваш выбор: "
+    printf "Your choice:"
     read_input category_choice
 
     case "$category_choice" in
@@ -213,24 +213,24 @@ SUBMENU
             if [ $? -eq 0 ] && [ -n "$SELECTED_STRATEGY" ]; then
                 local new_strategy="$SELECTED_STRATEGY"
                 print_separator
-                print_info "Применяю стратегию #$new_strategy для тестирования..."
+                print_info "I'm using the #$new_strategy for testing..."
                 apply_category_strategies_v2 "$new_strategy" "$current_yt_gv" "$current_rkn"
                 print_separator
                 test_category_availability "YouTube TCP" "youtube.com"
                 print_separator
 
-                printf "Применить эту стратегию постоянно? [Y/n]: "
+                printf "Apply this strategy permanently? [Y/n]:"
                 read_input apply_confirm
                 case "$apply_confirm" in
                     [Nn]|[Nn][Oo])
-                        print_info "Откатываю к предыдущей стратегии #$current_yt_tcp..."
+                        print_info "I roll back to the previous strategy #$current_yt_tcp..."
                         apply_category_strategies_v2 "$current_yt_tcp" "$current_yt_gv" "$current_rkn"
-                        print_success "Откат выполнен"
+                        print_success "Rollback completed"
                         ;;
                     *)
                         save_category_strategies "$new_strategy" "$current_yt_gv" "$current_rkn"
                         apply_category_strategies_v2 "$new_strategy" "$current_yt_gv" "$current_rkn"
-                        print_success "Стратегия YouTube TCP применена постоянно!"
+                        print_success "The YouTube TCP strategy is applied permanently!"
                         ;;
                 esac
             fi
@@ -242,7 +242,7 @@ SUBMENU
             if [ $? -eq 0 ] && [ -n "$SELECTED_STRATEGY" ]; then
                 local new_strategy="$SELECTED_STRATEGY"
                 print_separator
-                print_info "Применяю стратегию #$new_strategy для тестирования..."
+                print_info "I'm using the #$new_strategy for testing..."
                 apply_category_strategies_v2 "$current_yt_tcp" "$new_strategy" "$current_rkn"
                 print_separator
                 local gv_domain
@@ -250,18 +250,18 @@ SUBMENU
                 test_category_availability "YouTube GV" "$gv_domain"
                 print_separator
 
-                printf "Применить эту стратегию постоянно? [Y/n]: "
+                printf "Apply this strategy permanently? [Y/n]:"
                 read_input apply_confirm
                 case "$apply_confirm" in
                     [Nn]|[Nn][Oo])
-                        print_info "Откатываю к предыдущей стратегии #$current_yt_gv..."
+                        print_info "I roll back to the previous strategy #$current_yt_gv..."
                         apply_category_strategies_v2 "$current_yt_tcp" "$current_yt_gv" "$current_rkn"
-                        print_success "Откат выполнен"
+                        print_success "Rollback completed"
                         ;;
                     *)
                         save_category_strategies "$current_yt_tcp" "$new_strategy" "$current_rkn"
                         apply_category_strategies_v2 "$current_yt_tcp" "$new_strategy" "$current_rkn"
-                        print_success "Стратегия YouTube GV применена постоянно!"
+                        print_success "YouTube GV strategy applied continuously!"
                         ;;
                 esac
             fi
@@ -273,24 +273,24 @@ SUBMENU
             if [ $? -eq 0 ] && [ -n "$SELECTED_STRATEGY" ]; then
                 local new_strategy="$SELECTED_STRATEGY"
                 print_separator
-                print_info "Применяю стратегию #$new_strategy для тестирования..."
+                print_info "I'm using the #$new_strategy for testing..."
                 apply_category_strategies_v2 "$current_yt_tcp" "$current_yt_gv" "$new_strategy"
                 print_separator
                 test_category_availability_rkn
                 print_separator
 
-                printf "Применить эту стратегию постоянно? [Y/n]: "
+                printf "Apply this strategy permanently? [Y/n]:"
                 read_input apply_confirm
                 case "$apply_confirm" in
                     [Nn]|[Nn][Oo])
-                        print_info "Откатываю к предыдущей стратегии #$current_rkn..."
+                        print_info "I roll back to the previous strategy #$current_rkn..."
                         apply_category_strategies_v2 "$current_yt_tcp" "$current_yt_gv" "$current_rkn"
-                        print_success "Откат выполнен"
+                        print_success "Rollback completed"
                         ;;
                     *)
                         save_category_strategies "$current_yt_tcp" "$current_yt_gv" "$new_strategy"
                         apply_category_strategies_v2 "$current_yt_tcp" "$current_yt_gv" "$new_strategy"
-                        print_success "Стратегия RKN применена постоянно!"
+                        print_success "The RKN strategy is applied continuously!"
                         ;;
                 esac
             fi
@@ -302,25 +302,25 @@ SUBMENU
             return
             ;;
         5)
-            # Все категории
+            # All categories
             menu_select_all_strategies "$total_count"
             pause
             return
             ;;
         6)
             print_separator
-            print_info "Выберите уровень агрессивности:"
-            printf "  [1] Мягкий (soft)     -> TCP #1/#4/#7, QUIC #1\n"
-            printf "  [2] Средний (medium)  -> TCP #2/#5/#8, QUIC #2\n"
-            printf "  [3] Агрессивный (hard)-> TCP #3/#6/#9, QUIC #3\n"
-            printf "Ваш выбор [1/2/3]: "
+            print_info "Select aggressiveness level:"
+            printf "[1] Soft -> TCP #1/#4/#7, QUIC #1\n"
+            printf "[2] Medium -> TCP #2/#5/#8, QUIC #2\n"
+            printf "[3] Aggressive (hard)-> TCP #3/#6/#9, QUIC #3\n"
+            printf "Your choice [1/2/3]:"
             read_input tier_choice
 
             case "$tier_choice" in
                 1) apply_default_strategies ;;
                 2) apply_medium_strategies ;;
                 3) apply_new_default_strategies ;;
-                *) print_warning "Неверный выбор уровня" ;;
+                *) print_warning "Incorrect level selection" ;;
             esac
             pause
             return
@@ -329,38 +329,38 @@ SUBMENU
             return
             ;;
         *)
-            print_error "Неверный выбор"
+            print_error "Wrong choice"
             pause
             return
             ;;
     esac
 }
 
-# Вспомогательная функция: проверка доступности категории
+# Helper Function: Category Availability Check
 test_category_availability() {
     local category_name=$1
     local test_domain=$2
 
-    print_info "Проверка доступности: $category_name ($test_domain)..."
+    print_info "Availability check: $category_name ($test_domain)..."
 
-    # Подождать 2 секунды для применения правил
+    # Wait 2 seconds for rules to apply
     sleep 2
 
-    # Запустить тест
+    # Run test
     if test_strategy_tls "$test_domain" 5; then
-        print_success "[OK] $category_name доступен! Стратегия работает."
+        print_success "[OK] $category_name is available! The strategy is working."
     else
-        print_error "[FAIL] $category_name недоступен. Попробуйте другую стратегию."
-        print_info "Рекомендация: запустите автотест [3] для поиска рабочей стратегии"
+        print_error "[FAIL] $category_name is not available. Try a different strategy."
+        print_info "Recommendation: run Autotest [3] to find a working strategy"
     fi
 }
 
-# Вспомогательная функция: проверка доступности RKN (3 домена)
+# Helper function: RKN availability check (3 domains)
 test_category_availability_rkn() {
     local test_domains="meduza.io facebook.com rutracker.org"
     local success_count=0
 
-    print_info "Проверка доступности: RKN (meduza.io, facebook.com, rutracker.org)..."
+    print_info "Availability check: RKN (meduza.io, facebook.com, rutracker.org)..."
 
     sleep 2
 
@@ -371,68 +371,68 @@ test_category_availability_rkn() {
     done
 
     if [ "$success_count" -ge 2 ]; then
-        print_success "[OK] RKN доступен! Стратегия работает. (${success_count}/3)"
+        print_success "[OK] RKN is available! The strategy is working. (${success_count}/3)"
     else
-        print_error "[FAIL] RKN недоступен. Попробуйте другую стратегию. (${success_count}/3)"
-        print_info "Рекомендация: запустите автотест [3] для поиска рабочей стратегии"
+        print_error "[FAIL] RKN is not available. Try a different strategy. (${success_count}/3)"
+        print_info "Recommendation: run Autotest [3] to find a working strategy"
     fi
 }
 
-# Глобальная переменная для передачи выбранной стратегии
+# Global variable to transfer the selected strategy
 SELECTED_STRATEGY=""
 
-# Вспомогательная функция: выбор стратегии для одной категории
+# Helper function: select strategy for one category
 menu_select_single_strategy() {
     local category_name=$1
     local current_strategy=$2
     local total_count=$3
 
-    # Сброс глобальной переменной
+    # Resetting a global variable
     SELECTED_STRATEGY=""
 
     printf "\n"
-    print_info "Выбор стратегии для: $category_name"
-    printf "Текущая стратегия: #%s\n\n" "$current_strategy"
+    print_info "Selecting a strategy for: $category_name"
+    printf "Current strategy: #%s\n\n" "$current_strategy"
 
     while true; do
-        printf "Введите номер стратегии [1-%s] или Enter для отмены: " "$total_count"
+        printf "Enter strategy number [1-%s] or Enter to cancel:" "$total_count"
         read_input new_strategy
 
-        # Отмена
+        # Cancel
         if [ -z "$new_strategy" ]; then
-            print_info "Отменено"
+            print_info "Cancelled"
             return 1
         fi
 
-        # Проверки
+        # Checks
         if ! echo "$new_strategy" | grep -qE '^[0-9]+$'; then
-            print_error "Неверный формат номера"
+            print_error "Invalid number format"
             continue
         fi
 
         if [ "$new_strategy" -lt 1 ] || [ "$new_strategy" -gt "$total_count" ]; then
-            print_error "Номер вне диапазона"
+            print_error "Number out of range"
             continue
         fi
 
         if ! strategy_exists "$new_strategy"; then
-            print_error "Стратегия #$new_strategy не найдена"
+            print_error "Strategy #$new_strategy not found"
             continue
         fi
 
-        # Показать параметры
+        # Show options
         local params
         params=$(get_strategy "$new_strategy")
-        print_info "Выбрана стратегия #$new_strategy:"
+        print_info "Strategy #$new_strategy selected:"
         printf "  %s\n\n" "$params"
 
-        # Сохраняем в глобальную переменную
+        # Save to a global variable
         SELECTED_STRATEGY="$new_strategy"
         return 0
     done
 }
 
-# Применить текущие стратегии категорий (YouTube TCP/GV/RKN)
+# Apply current category strategies (YouTube TCP/GV/RKN)
 apply_current_category_strategies() {
     local config_file="${CONFIG_DIR}/category_strategies.conf"
     local current_yt_tcp="1"
@@ -448,17 +448,17 @@ apply_current_category_strategies() {
         [ -z "$current_rkn" ] && current_rkn="1"
     fi
 
-    print_info "Применяю текущие стратегии категорий..."
+    print_info "Applying current category strategies..."
     apply_category_strategies_v2 "$current_yt_tcp" "$current_yt_gv" "$current_rkn"
 }
 
-# Вспомогательная функция: выбор стратегии QUIC (UDP 443)
+# Helper function: QUIC strategy selection (UDP 443)
 menu_select_quic_strategy() {
     clear_screen
-    print_header "QUIC стратегия (UDP 443)"
+    print_header "QUIC strategy (UDP 443)"
 
     if ! is_zapret2_installed; then
-        print_error "zapret2 не установлен"
+        print_error "lock2 is not installed"
         pause
         return
     fi
@@ -466,23 +466,23 @@ menu_select_quic_strategy() {
     local total_quic
     total_quic=$(get_quic_strategies_count)
     if [ "$total_quic" -lt 1 ]; then
-        print_error "QUIC стратегии не найдены"
+        print_error "QUIC strategies not found"
         pause
         return
     fi
 
     printf "\n"
-    print_info "Всего QUIC стратегий: $total_quic"
-    printf "Текущие QUIC стратегии:\n"
+    print_info "Total QUIC strategies: $total_quic"
+    printf "Current QUIC strategies:\n"
     printf "  YouTube:    #%s\n" "$(get_current_quic_strategy)"
     printf "  RuTracker:  #%s\n\n" "$(get_rutracker_quic_strategy)"
 
     while true; do
-        printf "Выберите категорию QUIC:\n"
+        printf "Select QUIC category:\n"
         printf "[1] YouTube QUIC\n"
         printf "[2] RuTracker QUIC\n"
-        printf "[B] Назад\n\n"
-        printf "Ваш выбор: "
+        printf "[B] Back\n\n"
+        printf "Your choice:"
         read_input quic_choice
 
         case "$quic_choice" in
@@ -500,32 +500,32 @@ menu_select_quic_strategy() {
                 return
                 ;;
             *)
-                print_error "Неверный выбор"
+                print_error "Wrong choice"
                 continue
                 ;;
         esac
 
-        printf "\nТекущая QUIC стратегия: #%s\n" "$current_quic"
-        printf "Введите номер QUIC стратегии [1-%s] или Enter для отмены: " "$total_quic"
+        printf "\nCurrent QUIC strategy: #%s\n" "$current_quic"
+        printf "Enter the QUIC strategy number [1-%s] or Enter to cancel:" "$total_quic"
         read_input new_strategy
 
         if [ -z "$new_strategy" ]; then
-            print_info "Отменено"
+            print_info "Cancelled"
             return
         fi
 
         if ! echo "$new_strategy" | grep -qE '^[0-9]+$'; then
-            print_error "Неверный формат номера"
+            print_error "Invalid number format"
             continue
         fi
 
         if [ "$new_strategy" -lt 1 ] || [ "$new_strategy" -gt "$total_quic" ]; then
-            print_error "Номер вне диапазона"
+            print_error "Number out of range"
             continue
         fi
 
         if ! quic_strategy_exists "$new_strategy"; then
-            print_error "QUIC стратегия #$new_strategy не найдена"
+            print_error "QUIC strategy #$new_strategy not found"
             continue
         fi
 
@@ -536,15 +536,15 @@ menu_select_quic_strategy() {
         desc=$(get_quic_strategy_desc "$new_strategy")
         params=$(get_quic_strategy "$new_strategy")
 
-        print_info "Выбрана QUIC стратегия #$new_strategy (${name})"
+        print_info "Selected QUIC strategy #$new_strategy (${name})"
         [ -n "$desc" ] && printf "  %s\n" "$desc"
         printf "  %s\n\n" "$params"
 
-        printf "Применить эту QUIC стратегию для %s? [Y/n]: " "$category_name"
+        printf "Apply this QUIC strategy to %s? [Y/n]:" "$category_name"
         read_input apply_confirm
         case "$apply_confirm" in
             [Nn]|[Nn][Oo])
-                print_info "Отменено"
+                print_info "Cancelled"
                 return
                 ;;
             *)
@@ -554,7 +554,7 @@ menu_select_quic_strategy() {
                     set_rutracker_quic_strategy "$new_strategy"
                 fi
                 apply_current_category_strategies
-                print_success "QUIC стратегия применена"
+                print_success "QUIC strategy applied"
                 pause
                 return
                 ;;
@@ -562,12 +562,12 @@ menu_select_quic_strategy() {
     done
 }
 
-# Вспомогательная функция: выбор стратегий для всех категорий
+# Helper function: select strategies for all categories
 menu_select_all_strategies() {
     local total_count=$1
 
     printf "\n"
-    print_info "Выбор стратегий для всех категорий:"
+    print_info "Selection of strategies for all categories:"
     printf "\n"
 
     # YouTube TCP
@@ -577,17 +577,17 @@ menu_select_all_strategies() {
         read_input yt_tcp_strategy
 
         if ! echo "$yt_tcp_strategy" | grep -qE '^[0-9]+$'; then
-            print_error "Неверный формат"
+            print_error "Invalid format"
             continue
         fi
 
         if [ "$yt_tcp_strategy" -lt 1 ] || [ "$yt_tcp_strategy" -gt "$total_count" ]; then
-            print_error "Номер вне диапазона"
+            print_error "Number out of range"
             continue
         fi
 
         if ! strategy_exists "$yt_tcp_strategy"; then
-            print_error "Стратегия не найдена"
+            print_error "Strategy not found"
             continue
         fi
 
@@ -597,27 +597,27 @@ menu_select_all_strategies() {
     # YouTube GV
     local yt_gv_strategy
     while true; do
-        printf "YouTube GV [1-%s, Enter=использовать %s]: " "$total_count" "$yt_tcp_strategy"
+        printf "YouTube GV [1-%s, Enter=use %s]:" "$total_count" "$yt_tcp_strategy"
         read_input yt_gv_strategy
 
         if [ -z "$yt_gv_strategy" ]; then
             yt_gv_strategy="$yt_tcp_strategy"
-            print_info "Используется: #$yt_gv_strategy"
+            print_info "Used: #$yt_gv_strategy"
             break
         fi
 
         if ! echo "$yt_gv_strategy" | grep -qE '^[0-9]+$'; then
-            print_error "Неверный формат"
+            print_error "Invalid format"
             continue
         fi
 
         if [ "$yt_gv_strategy" -lt 1 ] || [ "$yt_gv_strategy" -gt "$total_count" ]; then
-            print_error "Номер вне диапазона"
+            print_error "Number out of range"
             continue
         fi
 
         if ! strategy_exists "$yt_gv_strategy"; then
-            print_error "Стратегия не найдена"
+            print_error "Strategy not found"
             continue
         fi
 
@@ -627,58 +627,58 @@ menu_select_all_strategies() {
     # RKN
     local rkn_strategy
     while true; do
-        printf "RKN [1-%s, Enter=использовать %s]: " "$total_count" "$yt_tcp_strategy"
+        printf "RKN [1-%s, Enter=use %s]:" "$total_count" "$yt_tcp_strategy"
         read_input rkn_strategy
 
         if [ -z "$rkn_strategy" ]; then
             rkn_strategy="$yt_tcp_strategy"
-            print_info "Используется: #$rkn_strategy"
+            print_info "Used: #$rkn_strategy"
             break
         fi
 
         if ! echo "$rkn_strategy" | grep -qE '^[0-9]+$'; then
-            print_error "Неверный формат"
+            print_error "Invalid format"
             continue
         fi
 
         if [ "$rkn_strategy" -lt 1 ] || [ "$rkn_strategy" -gt "$total_count" ]; then
-            print_error "Номер вне диапазона"
+            print_error "Number out of range"
             continue
         fi
 
         if ! strategy_exists "$rkn_strategy"; then
-            print_error "Стратегия не найдена"
+            print_error "Strategy not found"
             continue
         fi
 
         break
     done
 
-    # Итоговая таблица
+    # Final table
     printf "\n"
     print_separator
-    printf "%-20s | %s\n" "Категория" "Стратегия"
+    printf "%-20s | %s\n" "Category" "Strategy"
     print_separator
     printf "%-20s | #%s\n" "YouTube TCP" "$yt_tcp_strategy"
     printf "%-20s | #%s\n" "YouTube GV" "$yt_gv_strategy"
     printf "%-20s | #%s\n" "RKN" "$rkn_strategy"
     print_separator
 
-    printf "\nПрименить? [Y/n]: "
+    printf "\nApply? [Y/n]:"
     read_input answer
 
     case "$answer" in
         [Nn]|[Nn][Oo])
-            print_info "Отменено"
+            print_info "Cancelled"
             ;;
         *)
             save_category_strategies "$yt_tcp_strategy" "$yt_gv_strategy" "$rkn_strategy"
             apply_category_strategies_v2 "$yt_tcp_strategy" "$yt_gv_strategy" "$rkn_strategy"
-            print_success "Все стратегии применены!"
+            print_success "All strategies applied!"
             print_separator
 
-            # Автопроверка всех категорий
-            print_info "Запуск проверки доступности..."
+            # Auto check of all categories
+            print_info "Running accessibility check..."
             print_separator
             test_category_availability "YouTube TCP" "youtube.com"
             print_separator
@@ -692,15 +692,15 @@ menu_select_all_strategies() {
 }
 
 # ==============================================================================
-# ПОДМЕНЮ: АВТОТЕСТ
+# SUBMENU: AUTOTEST
 # ==============================================================================
 
 menu_autotest() {
     clear_screen
-    print_header "[3] Автотест стратегий"
+    print_header "[3] Autotest of strategies"
 
     if ! is_zapret2_installed; then
-        print_error "zapret2 не установлен"
+        print_error "lock2 is not installed"
         pause
         return
     fi
@@ -711,22 +711,22 @@ menu_autotest() {
         total_count="?"
     fi
 
-    printf "Режимы тестирования:\n\n"
-    printf "[1] По категориям Z4R (YouTube TCP/GV + RKN, ~8-10 мин)\n"
-    printf "[2] Общий тест (все стратегии, ~2-3 мин)\n"
-    printf "[3] Диапазон (укажите вручную)\n"
-    printf "[4] Все стратегии (только HTTPS, %s шт, ~15 мин)\n" "$total_count"
-    printf "[5] QUIC тест (UDP 443, ~5-10 мин)\n"
-    printf "[B] Назад\n\n"
+    printf "Test modes:\n\n"
+    printf "[1] By category Z4R (YouTube TCP/GV + RKN, ~8-10 min)\n"
+    printf "[2] General test (all strategies, ~2-3 min)\n"
+    printf "[3] Range (specify manually)\n"
+    printf "[4] All strategies (HTTPS only, %s pieces, ~15 min)\n" "$total_count"
+    printf "[5] QUIC test (UDP 443, ~5-10 min)\n"
+    printf "[B] Back\n\n"
 
-    printf "Выберите режим: "
+    printf "Select mode:"
     read_input test_mode
 
     case "$test_mode" in
         1)
             clear_screen
-            print_info "Автотест по категориям Z4R (YouTube TCP, YouTube GV, RKN)"
-            if confirm "Начать тестирование?" "Y"; then
+            print_info "Autotest by category Z4R (YouTube TCP, YouTube GV, RKN)"
+            if confirm "Start testing?" "Y"; then
                 auto_test_categories
             fi
             ;;
@@ -735,26 +735,26 @@ menu_autotest() {
             auto_test_top20
             ;;
         3)
-            printf "\nНачало диапазона: "
+            printf "\nStart of range:"
             read_input start_range
-            printf "Конец диапазона: "
+            printf "End of range:"
             read_input end_range
 
             if [ -n "$start_range" ] && [ -n "$end_range" ]; then
                 clear_screen
                 test_strategy_range "$start_range" "$end_range"
             else
-                print_error "Неверный диапазон"
+                print_error "Invalid range"
             fi
             ;;
         4)
             clear_screen
-            print_warning "Это займет около 15 минут!"
-            if confirm "Продолжить?" "N"; then
+            print_warning "It will take about 15 minutes!"
+            if confirm "Continue?" "N"; then
                 local total_count
                 total_count=$(get_strategies_count)
                 if [ "$total_count" -lt 1 ]; then
-                    print_error "Стратегии не найдены"
+                    print_error "No strategies found"
                     pause
                     return
                 fi
@@ -769,7 +769,7 @@ menu_autotest() {
             return
             ;;
         *)
-            print_error "Неверный выбор"
+            print_error "Wrong choice"
             ;;
     esac
 
@@ -777,15 +777,15 @@ menu_autotest() {
 }
 
 # ==============================================================================
-# ПОДМЕНЮ: УПРАВЛЕНИЕ СЕРВИСОМ
+# SUBMENU: SERVICE MANAGEMENT
 # ==============================================================================
 
 menu_service_control() {
     clear_screen
-    print_header "[4] Управление сервисом"
+    print_header "[4] Service management"
 
     if ! is_zapret2_installed; then
-        print_error "zapret2 не установлен"
+        print_error "lock2 is not installed"
         pause
         return
     fi
@@ -799,20 +799,20 @@ menu_service_control() {
 
 SUBMENU
 
-    printf "Выберите действие: "
+    printf "Select action:"
     read_input action
 
     case "$action" in
         1)
-            print_info "Запуск сервиса..."
+            print_info "Starting the service..."
             "$INIT_SCRIPT" start
             ;;
         2)
-            print_info "Остановка сервиса..."
+            print_info "Stopping the service..."
             "$INIT_SCRIPT" stop
             ;;
         3)
-            print_info "Перезапуск сервиса..."
+            print_info "Restarting the service..."
             "$INIT_SCRIPT" restart
             ;;
         4)
@@ -822,7 +822,7 @@ SUBMENU
             return
             ;;
         *)
-            print_error "Неверный выбор"
+            print_error "Wrong choice"
             ;;
     esac
 
@@ -830,25 +830,25 @@ SUBMENU
 }
 
 # ==============================================================================
-# ПОДМЕНЮ: ПРОСМОТР СТРАТЕГИИ
+# SUBMENU: VIEW STRATEGY
 # ==============================================================================
 
 menu_view_strategy() {
     clear_screen
-    print_header "[5] Текущие стратегии"
+    print_header "[5] Current strategies"
 
     if ! is_zapret2_installed; then
-        print_error "zapret2 не установлен"
+        print_error "lock2 is not installed"
         pause
         return
     fi
 
-    # Проверить наличие файла с категориями
+    # Check for the presence of a file with categories
     if [ -f "$CATEGORY_STRATEGIES_CONF" ]; then
-        print_info "Стратегии по категориям:"
+        print_info "Strategies by category:"
         print_separator
 
-        # Прочитать и показать стратегии для каждой категории
+        # Read and show strategies for each category
         while IFS=':' read -r category strategy score; do
             [ -z "$category" ] && continue
 
@@ -858,21 +858,21 @@ menu_view_strategy() {
             type=$(get_strategy_type "$strategy" 2>/dev/null)
 
             printf "\n[%s]\n" "$(echo "$category" | tr '[:lower:]' '[:upper:]')"
-            printf "  Стратегия: #%s (оценка: %s/5)\n" "$strategy" "$score"
-            printf "  Тип: %s\n" "$type"
+            printf "Strategy: #%s (score: %s/5)\n" "$strategy" "$score"
+            printf "Type: %s\n" "$type"
         done < "$CATEGORY_STRATEGIES_CONF"
 
         print_separator
     else
-        # Старый режим - одна стратегия
+        # Old regime - one strategy
         local current
         current=$(get_current_strategy)
 
-        if [ "$current" = "не задана" ] || [ -z "$current" ]; then
-            print_warning "Стратегия не выбрана"
-            print_info "Используется стратегия по умолчанию из init скрипта"
+        if [ "$current" = "not specified" ] || [ -z "$current" ]; then
+            print_warning "No strategy selected"
+            print_info "The default strategy from the init script is used"
         else
-            print_info "Текущая стратегия: #$current"
+            print_info "Current strategy: #$current"
             print_separator
 
             local params
@@ -880,46 +880,46 @@ menu_view_strategy() {
             local type
             type=$(get_strategy_type "$current")
 
-            printf "Тип: %s\n\n" "$type"
-            printf "Параметры:\n%s\n" "$params"
+            printf "Type: %s\n\n" "$type"
+            printf "Parameter:\n%s\n" "$params"
             print_separator
         fi
     fi
 
-    # Показать статус сервиса
-    printf "\nСтатус сервиса: %s\n" "$(get_service_status)"
+    # Show service status
+    printf "\nService status: %s\n" "$(get_service_status)"
 
     if is_zapret2_running; then
-        printf "\nПроцессы nfqws2:\n"
-        pgrep -af "nfqws2" 2>/dev/null || print_info "Процессы не найдены"
+        printf "\nProcesses nfqws2:\n"
+        pgrep -af "nfqws2" 2>/dev/null || print_info "No processes found"
     fi
 
     pause
 }
 
 # ==============================================================================
-# ПОДМЕНЮ: ОБНОВЛЕНИЕ СПИСКОВ
+# SUBMENU: LIST UPDATE
 # ==============================================================================
 
 menu_update_lists() {
     clear_screen
-    print_header "[6] Обновление списков доменов"
+    print_header "[6] Updating domain lists"
 
     if ! is_zapret2_installed; then
-        print_error "zapret2 не установлен"
+        print_error "lock2 is not installed"
         pause
         return
     fi
 
-    # Показать текущие списки
+    # Show current listings
     show_domain_lists_stats
 
-    printf "\nОбновить списки из zapret4rocket? [Y/n]: "
+    printf "\nUpdate lists from zapret4rocket? [Y/n]:"
     read_input answer
 
     case "$answer" in
         [Nn]|[Nn][Oo])
-            print_info "Отменено"
+            print_info "Cancelled"
             ;;
         *)
             update_domain_lists
@@ -930,35 +930,35 @@ menu_update_lists() {
 }
 
 # ==============================================================================
-# ПОДМЕНЮ: DISCORD
+# SUBMENU: DISCORD
 # ==============================================================================
 
 menu_discord() {
     clear_screen
-    print_header "[7] Настройка Discord (голос/видео)"
+    print_header "[7] Setting up Discord (voice/video)"
 
     if ! is_zapret2_installed; then
-        print_error "zapret2 не установлен"
+        print_error "lock2 is not installed"
         pause
         return
     fi
 
-    # Вызвать функцию из lib/discord.sh
+    # Call a function from lib/discord.sh
     configure_discord_voice
 
     pause
 }
 
 # ==============================================================================
-# ПОДМЕНЮ: BACKUP/RESTORE
+# SUBMENU: BACKUP/RESTORE
 # ==============================================================================
 
 menu_backup_restore() {
     clear_screen
-    print_header "[8] Резервная копия/Восстановление"
+    print_header "[8] Backup/Restore"
 
     if ! is_zapret2_installed; then
-        print_error "zapret2 не установлен"
+        print_error "lock2 is not installed"
         pause
         return
     fi
@@ -971,7 +971,7 @@ menu_backup_restore() {
 
 SUBMENU
 
-    printf "Выберите действие: "
+    printf "Select action:"
     read_input action
 
     case "$action" in
@@ -988,7 +988,7 @@ SUBMENU
             return
             ;;
         *)
-            print_error "Неверный выбор"
+            print_error "Wrong choice"
             ;;
     esac
 
@@ -996,15 +996,15 @@ SUBMENU
 }
 
 # ==============================================================================
-# ПОДМЕНЮ: УДАЛЕНИЕ
+# SUBMENU: DELETE
 # ==============================================================================
 
 menu_uninstall() {
     clear_screen
-    print_header "[9] Удаление zapret2"
+    print_header "[9] Removing zapret2"
 
     if ! is_zapret2_installed; then
-        print_info "zapret2 не установлен"
+        print_info "lock2 is not installed"
         pause
         return
     fi
@@ -1015,33 +1015,33 @@ menu_uninstall() {
 }
 
 # ==============================================================================
-# ПОДМЕНЮ: РЕЖИМ ALL TCP-443 (БЕЗ ХОСТЛИСТОВ)
+# SUBMENU: ALL TCP-443 MODE (WITHOUT HOSTLISTS)
 # ==============================================================================
 
 menu_all_tcp443() {
     clear_screen
-    print_header "Режим ALL TCP-443 (без хостлистов)"
+    print_header "ALL TCP-443 mode (no hostlists)"
 
     local conf_file="${CONFIG_DIR}/all_tcp443.conf"
 
-    # Проверить существование конфига
+    # Check the existence of the config
     if [ ! -f "$conf_file" ]; then
-        print_error "Файл конфигурации не найден: $conf_file"
-        print_info "Запустите установку сначала"
+        print_error "Configuration file not found: $conf_file"
+        print_info "Run the installation first"
         pause
         return 1
     fi
 
-    # Прочитать текущую конфигурацию
+    # Read current configuration
     . "$conf_file"
     local current_enabled=$ENABLED
     local current_strategy=$STRATEGY
 
     print_separator
 
-    print_info "Текущая конфигурация:"
-    printf "  Статус: %s\n" "$([ "$current_enabled" = "1" ] && echo 'Включен' || echo 'Выключен')"
-    printf "  Стратегия: #%s\n" "$current_strategy"
+    print_info "Current configuration:"
+    printf "Status: %s\n" "$([ "$current_enabled" = "1" ] && echo 'Включен' || echo 'Выключен')"
+    printf "Strategy: #%s\n" "$current_strategy"
 
     print_separator
 
@@ -1067,108 +1067,108 @@ menu_all_tcp443() {
 
 SUBMENU
 
-    printf "Выберите опцию [1-3,B]: "
+    printf "Select option [1-3,B]:"
     read_input sub_choice
 
     case "$sub_choice" in
         1)
-            # Включить режим
-            print_info "Выбор стратегии для режима ALL TCP-443..."
+            # Enable mode
+            print_info "Selecting a strategy for the ALL TCP-443... mode"
             print_separator
 
-            # Показать топ стратегий
-            print_info "Рекомендуемые стратегии для режима ALL TCP-443:"
-            printf "  #1  - multidisorder (базовая)\n"
+            # Show top strategies
+            print_info "Recommended strategies for TCP-443 ALL mode:"
+            printf "  #1 - multidisorder (basic)\n"
             printf "  #7  - multidisorder:pos=1\n"
             printf "  #13 - multidisorder:pos=sniext+1\n"
-            printf "  #67 - fakedsplit с ip_autottl (продвинутая)\n"
+            printf "  #67 - fakedsplit with ip_autottl (advanced)\n"
             print_separator
 
-            printf "Введите номер стратегии [1-199] или Enter для #1: "
+            printf "Enter strategy number [1-199] or Enter for #1:"
             read_input strategy_num
 
-            # Валидация
+            # Validation
             if [ -z "$strategy_num" ]; then
                 strategy_num=1
             fi
 
             if ! echo "$strategy_num" | grep -qE '^[0-9]+$' || [ "$strategy_num" -lt 1 ] || [ "$strategy_num" -gt 199 ]; then
-                print_error "Неверный номер стратегии: $strategy_num"
+                print_error "Invalid strategy number: $strategy_num"
                 pause
                 return 1
             fi
 
-            # Обновить конфиг
+            # Update config
             sed -i "s/^ENABLED=.*/ENABLED=1/" "$conf_file"
             sed -i "s/^STRATEGY=.*/STRATEGY=$strategy_num/" "$conf_file"
 
-            print_success "Режим ALL TCP-443 включен с стратегией #$strategy_num"
+            print_success "TCP-443 ALL mode enabled with strategy #$strategy_num"
             print_separator
 
-            # Перезапуск сервиса
+            # Restarting the service
             if is_zapret2_running; then
-                print_info "Перезапуск сервиса для применения изменений..."
+                print_info "Restarting the service to apply the changes..."
                 "$INIT_SCRIPT" restart
-                print_success "Сервис перезапущен"
+                print_success "Service restarted"
             else
-                print_warning "Сервис не запущен. Запустите через [4] Управление сервисом"
+                print_warning "The service is not running. Run via [4] Service Management"
             fi
 
             pause
             ;;
 
         2)
-            # Выключить режим
+            # Turn off mode
             if [ "$current_enabled" != "1" ]; then
-                print_info "Режим ALL TCP-443 уже выключен"
+                print_info "ALL TCP-443 mode is already disabled"
                 pause
                 return 0
             fi
 
             sed -i "s/^ENABLED=.*/ENABLED=0/" "$conf_file"
-            print_success "Режим ALL TCP-443 выключен"
+            print_success "ALL TCP-443 mode is disabled"
             print_separator
 
-            # Перезапуск сервиса
+            # Restarting the service
             if is_zapret2_running; then
-                print_info "Перезапуск сервиса для применения изменений..."
+                print_info "Restarting the service to apply the changes..."
                 "$INIT_SCRIPT" restart
-                print_success "Сервис перезапущен"
+                print_success "Service restarted"
             fi
 
             pause
             ;;
 
         3)
-            # Изменить стратегию
+            # Change strategy
             if [ "$current_enabled" != "1" ]; then
-                print_warning "Режим ALL TCP-443 выключен"
-                print_info "Сначала включите режим через [1]"
+                print_warning "ALL TCP-443 mode is disabled"
+                print_info "First enable the mode via [1]"
                 pause
                 return 0
             fi
 
-            printf "Текущая стратегия: #%s\n" "$current_strategy"
+            printf "Current strategy: #%s\n" "$current_strategy"
             print_separator
-            printf "Введите новый номер стратегии [1-199]: "
+            printf "Enter new strategy number [1-199]:"
             read_input new_strategy
 
-            # Валидация
+            # Validation
             if ! echo "$new_strategy" | grep -qE '^[0-9]+$' || [ "$new_strategy" -lt 1 ] || [ "$new_strategy" -gt 199 ]; then
-                print_error "Неверный номер стратегии: $new_strategy"
+                print_error "Invalid strategy number: $new_strategy"
                 pause
                 return 1
             fi
 
             sed -i "s/^STRATEGY=.*/STRATEGY=$new_strategy/" "$conf_file"
-            print_success "Стратегия изменена на #$new_strategy"
+            print_success "Strategy changed to #$new_strategy"
             print_separator
 
-            # Перезапуск сервиса
+            # Restarting the service
             if is_zapret2_running; then
-                print_info "Перезапуск сервиса для применения изменений..."
+                print_info "Restarting the service to apply the changes..."
                 "$INIT_SCRIPT" restart
-                print_success "Сервис перезапущен"
+                print_success "Service restarted"
             fi
 
             pause
@@ -1179,66 +1179,66 @@ SUBMENU
             ;;
 
         *)
-            print_error "Неверный выбор: $sub_choice"
+            print_error "Wrong choice: $sub_choice"
             pause
             ;;
     esac
 }
 
 # ==============================================================================
-# ПОДМЕНЮ: WHITELIST (ИСКЛЮЧЕНИЯ)
+# SUBMENU: WHITELIST
 # ==============================================================================
 
 menu_whitelist() {
     clear_screen
-    print_header "Whitelist - Исключения из обработки"
+    print_header "Whitelist - Exceptions from processing"
 
     local whitelist_file="${LISTS_DIR}/whitelist.txt"
 
-    # Проверить существование файла
+    # Check file existence
     if [ ! -f "$whitelist_file" ]; then
-        print_warning "Файл whitelist не найден: $whitelist_file"
-        print_info "Создаю файл..."
+        print_warning "Whitelist file not found: $whitelist_file"
+        print_info "I'm creating a file..."
 
-        # Создать директорию если не существует
+        # Create directory if it doesn't exist
         if ! mkdir -p "$LISTS_DIR" 2>/dev/null; then
-            print_error "Не удалось создать директорию: $LISTS_DIR"
-            print_info "Проверьте права доступа"
+            print_error "Failed to create directory: $LISTS_DIR"
+            print_info "Check permissions"
             pause
             return 1
         fi
 
-        # Создать базовый whitelist
+        # Create a basic whitelist
         cat > "$whitelist_file" <<'EOF'
-# Whitelist - домены исключенные из обработки zapret2
-# Критичные государственные сервисы РФ
+# Whitelist - domains excluded from processing by zapret2
+# Critical government services of the Russian Federation
 
-# Госуслуги (ЕСИА)
+# Public servants (ESIA)
 gosuslugi.ru
 esia.gosuslugi.ru
 lk.gosuslugi.ru
 
-# Налоговая служба
+# Tax service
 nalog.gov.ru
 lkfl2.nalog.ru
 
-# Пенсионный фонд
+# Pension fund
 pfr.gov.ru
 es.pfr.gov.ru
 
-# Другие важные госсервисы
+# Other important government services
 mos.ru
 pgu.mos.ru
 EOF
 
         if [ ! -f "$whitelist_file" ]; then
-            print_error "Не удалось создать файл whitelist"
-            print_info "Проверьте права доступа"
+            print_error "Failed to create whitelist file"
+            print_info "Check permissions"
             pause
             return 1
         fi
 
-        print_success "Файл whitelist создан: $whitelist_file"
+        print_success "Whitelist file created: $whitelist_file"
     fi
 
     print_separator
@@ -1263,14 +1263,14 @@ Whitelist содержит домены, которые ИСКЛЮЧЕНЫ из 
 
 INFO
 
-    printf "Выберите опцию [1-4,B]: "
+    printf "Select option [1-4,B]:"
     read_input sub_choice
 
     case "$sub_choice" in
         1)
-            # Просмотр
+            # View
             clear_screen
-            print_header "Текущий whitelist"
+            print_header "Current whitelist"
             print_separator
             cat "$whitelist_file"
             print_separator
@@ -1278,74 +1278,74 @@ INFO
             ;;
 
         2)
-            # Редактирование в vi
-            print_info "Открытие whitelist в редакторе..."
+            # Editing in vi
+            print_info "Opening whitelist in the editor..."
             vi "$whitelist_file"
 
-            # Перезапуск сервиса
+            # Restarting the service
             if is_zapret2_running; then
-                print_info "Перезапуск сервиса для применения изменений..."
+                print_info "Restarting the service to apply the changes..."
                 "$INIT_SCRIPT" restart
-                print_success "Сервис перезапущен"
+                print_success "Service restarted"
             fi
             pause
             ;;
 
         3)
-            # Добавить домен
-            printf "Введите домен для добавления (например: example.com): "
+            # Add a domain
+            printf "Enter the domain to add (for example: example.com):"
             read_input new_domain
 
-            # Простая валидация домена
+            # Simple domain validation
             if ! echo "$new_domain" | grep -qE '^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'; then
-                print_error "Неверный формат домена: $new_domain"
+                print_error "Invalid domain format: $new_domain"
                 pause
                 return 1
             fi
 
-            # Проверить дубликаты
+            # Check for duplicates
             if grep -qx "$new_domain" "$whitelist_file"; then
-                print_warning "Домен $new_domain уже в whitelist"
+                print_warning "Domain $new_domain is already in the whitelist"
                 pause
                 return 0
             fi
 
-            # Добавить домен
+            # Add a domain
             echo "$new_domain" >> "$whitelist_file"
-            print_success "Домен $new_domain добавлен в whitelist"
+            print_success "Domain $new_domain added to whitelist"
             print_separator
 
-            # Перезапуск сервиса
+            # Restarting the service
             if is_zapret2_running; then
-                print_info "Перезапуск сервиса для применения изменений..."
+                print_info "Restarting the service to apply the changes..."
                 "$INIT_SCRIPT" restart
-                print_success "Сервис перезапущен"
+                print_success "Service restarted"
             fi
             pause
             ;;
 
         4)
-            # Удалить домен
-            printf "Введите домен для удаления: "
+            # Delete domain
+            printf "Enter the domain to delete:"
             read_input del_domain
 
-            # Проверить наличие
+            # Check availability
             if ! grep -qx "$del_domain" "$whitelist_file"; then
-                print_error "Домен $del_domain не найден в whitelist"
+                print_error "Domain $del_domain not found in whitelist"
                 pause
                 return 1
             fi
 
-            # Удалить домен
+            # Delete domain
             sed -i "/^${del_domain}$/d" "$whitelist_file"
-            print_success "Домен $del_domain удален из whitelist"
+            print_success "Domain $del_domain removed from whitelist"
             print_separator
 
-            # Перезапуск сервиса
+            # Restarting the service
             if is_zapret2_running; then
-                print_info "Перезапуск сервиса для применения изменений..."
+                print_info "Restarting the service to apply the changes..."
                 "$INIT_SCRIPT" restart
-                print_success "Сервис перезапущен"
+                print_success "Service restarted"
             fi
             pause
             ;;
@@ -1355,34 +1355,34 @@ INFO
             ;;
 
         *)
-            print_error "Неверный выбор: $sub_choice"
+            print_error "Wrong choice: $sub_choice"
             pause
             ;;
     esac
 }
 
 # ==============================================================================
-# ПОДМЕНЮ: УПРАВЛЕНИЕ QUIC
+# SUBMENU: QUIC CONTROL
 # ==============================================================================
 
 menu_quic_settings() {
     clear_screen
-    print_header "Настройки QUIC"
+    print_header "QUIC Settings"
 
-    # Текущий статус
-    local quic_yt_enabled="Включен"
+    # Current status
+    local quic_yt_enabled="On"
     local quic_rkn_status
     if is_rutracker_quic_enabled; then
-        quic_rkn_status="Включен"
+        quic_rkn_status="On"
     else
-        quic_rkn_status="Выключен"
+        quic_rkn_status="Off"
     fi
 
-    printf "\nТекущие настройки:\n"
-    printf "  YouTube QUIC:    %s (стратегия #%s)\n" "$quic_yt_enabled" "$(get_current_quic_strategy)"
+    printf "\nCurrent settings:\n"
+    printf "YouTube QUIC: %s (strategy #%s)\n" "$quic_yt_enabled" "$(get_current_quic_strategy)"
     printf "  RuTracker QUIC:  %s" "$quic_rkn_status"
     if is_rutracker_quic_enabled; then
-        printf " (стратегия #%s)\n" "$(get_rutracker_quic_strategy)"
+        printf "(strategy #%s)\n" "$(get_rutracker_quic_strategy)"
     else
         printf "\n"
     fi
@@ -1396,25 +1396,25 @@ menu_quic_settings() {
 
 MENU
 
-    printf "Выберите опцию: "
+    printf "Select an option:"
     read_input choice
 
     case "$choice" in
         1)
-            # YouTube QUIC - выбор стратегии
+            # YouTube QUIC - choosing a strategy
             menu_select_quic_strategy_youtube
             ;;
         2)
-            # RuTracker QUIC - включить/выключить
+            # RuTracker QUIC - enable/disable
             menu_toggle_rutracker_quic
             ;;
         3)
-            # RuTracker QUIC - выбор стратегии
+            # RuTracker QUIC - choosing a strategy
             if is_rutracker_quic_enabled; then
                 menu_select_quic_strategy_rutracker
             else
-                print_warning "RuTracker QUIC выключен"
-                print_info "Сначала включите RuTracker QUIC (опция [2])"
+                print_warning "RuTracker QUIC is disabled"
+                print_info "First enable RuTracker QUIC (option [2])"
                 pause
             fi
             ;;
@@ -1422,40 +1422,40 @@ MENU
             return 0
             ;;
         *)
-            print_error "Неверный выбор: $choice"
+            print_error "Wrong choice: $choice"
             pause
             ;;
     esac
 }
 
-# Включить/выключить QUIC для RuTracker
+# Enable/disable QUIC for RuTracker
 menu_toggle_rutracker_quic() {
     clear_screen
-    print_header "RuTracker QUIC - включить/выключить"
+    print_header "RuTracker QUIC - enable/disable"
 
     local current_status
     if is_rutracker_quic_enabled; then
-        current_status="включен"
+        current_status="turned on"
     else
-        current_status="выключен"
+        current_status="off"
     fi
 
-    printf "\nТекущий статус: %s\n" "$current_status"
-    printf "\nЧто сделать?\n"
-    printf "[1] Включить RuTracker QUIC\n"
-    printf "[2] Выключить RuTracker QUIC\n"
-    printf "[B] Назад\n\n"
+    printf "\nTecular status: %s\n" "$current_status"
+    printf "\nWhat to do?\n"
+    printf "[1] Enable RuTracker QUIC\n"
+    printf "[2] Turn off RuTracker QUIC\n"
+    printf "[B] Back\n\n"
 
-    printf "Ваш выбор: "
+    printf "Your choice:"
     read_input choice
 
     case "$choice" in
         1)
-            # Включить
+            # Turn on
             set_rutracker_quic_enabled 1
-            print_success "RuTracker QUIC включен"
+            print_success "RuTracker QUIC enabled"
 
-            # Получить текущие стратегии
+            # Get current strategies
             local config_file="${CONFIG_DIR}/category_strategies.conf"
             local current_yt_tcp=1
             local current_yt_gv=1
@@ -1470,17 +1470,17 @@ menu_toggle_rutracker_quic() {
                 [ -z "$current_rkn" ] && current_rkn=1
             fi
 
-            # Применить изменения
+            # Apply changes
             apply_category_strategies_v2 "$current_yt_tcp" "$current_yt_gv" "$current_rkn"
-            print_success "Изменения применены"
+            print_success "Changes applied"
             pause
             ;;
         2)
-            # Выключить
+            # Turn off
             set_rutracker_quic_enabled 0
-            print_success "RuTracker QUIC выключен"
+            print_success "RuTracker QUIC is disabled"
 
-            # Получить текущие стратегии
+            # Get current strategies
             local config_file="${CONFIG_DIR}/category_strategies.conf"
             local current_yt_tcp=1
             local current_yt_gv=1
@@ -1495,31 +1495,31 @@ menu_toggle_rutracker_quic() {
                 [ -z "$current_rkn" ] && current_rkn=1
             fi
 
-            # Применить изменения
+            # Apply changes
             apply_category_strategies_v2 "$current_yt_tcp" "$current_yt_gv" "$current_rkn"
-            print_success "Изменения применены"
+            print_success "Changes applied"
             pause
             ;;
         b|B)
             return 0
             ;;
         *)
-            print_error "Неверный выбор: $choice"
+            print_error "Wrong choice: $choice"
             pause
             ;;
     esac
 }
 
-# Выбор QUIC стратегии для YouTube
+# Choosing a QUIC strategy for YouTube
 menu_select_quic_strategy_youtube() {
     clear_screen
-    print_header "YouTube QUIC - выбор стратегии"
+    print_header "YouTube QUIC - choosing a strategy"
 
     local total_quic
     total_quic=$(get_quic_strategies_count)
 
     if [ "$total_quic" -eq 0 ]; then
-        print_error "QUIC стратегии не найдены"
+        print_error "QUIC strategies not found"
         pause
         return 1
     fi
@@ -1527,39 +1527,39 @@ menu_select_quic_strategy_youtube() {
     local current_quic
     current_quic=$(get_current_quic_strategy)
 
-    printf "\nВсего QUIC стратегий: %s\n" "$total_quic"
-    printf "Текущая стратегия: #%s\n\n" "$current_quic"
+    printf "\nTotal QUIC strategies: %s\n" "$total_quic"
+    printf "Current strategy: #%s\n\n" "$current_quic"
 
-    printf "Введите номер стратегии [1-%s] или Enter для отмены: " "$total_quic"
+    printf "Enter strategy number [1-%s] or Enter to cancel:" "$total_quic"
     read_input new_strategy
 
     if [ -z "$new_strategy" ]; then
-        print_info "Отменено"
+        print_info "Cancelled"
         pause
         return 0
     fi
 
     if ! echo "$new_strategy" | grep -qE '^[0-9]+$'; then
-        print_error "Неверный формат"
+        print_error "Invalid format"
         pause
         return 1
     fi
 
     if [ "$new_strategy" -lt 1 ] || [ "$new_strategy" -gt "$total_quic" ]; then
-        print_error "Номер вне диапазона"
+        print_error "Number out of range"
         pause
         return 1
     fi
 
     if ! quic_strategy_exists "$new_strategy"; then
-        print_error "QUIC стратегия #$new_strategy не найдена"
+        print_error "QUIC strategy #$new_strategy not found"
         pause
         return 1
     fi
 
     set_current_quic_strategy "$new_strategy"
 
-    # Получить текущие стратегии
+    # Get current strategies
     local config_file="${CONFIG_DIR}/category_strategies.conf"
     local current_yt_tcp=1
     local current_yt_gv=1
@@ -1575,20 +1575,20 @@ menu_select_quic_strategy_youtube() {
     fi
 
     apply_category_strategies_v2 "$current_yt_tcp" "$current_yt_gv" "$current_rkn"
-    print_success "YouTube QUIC стратегия #$new_strategy применена"
+    print_success "YouTube QUIC strategy #$new_strategy applied"
     pause
 }
 
-# Выбор QUIC стратегии для RuTracker
+# Choosing a QUIC strategy for RuTracker
 menu_select_quic_strategy_rutracker() {
     clear_screen
-    print_header "RuTracker QUIC - выбор стратегии"
+    print_header "RuTracker QUIC - choosing a strategy"
 
     local total_quic
     total_quic=$(get_quic_strategies_count)
 
     if [ "$total_quic" -eq 0 ]; then
-        print_error "QUIC стратегии не найдены"
+        print_error "QUIC strategies not found"
         pause
         return 1
     fi
@@ -1596,39 +1596,39 @@ menu_select_quic_strategy_rutracker() {
     local current_quic
     current_quic=$(get_rutracker_quic_strategy)
 
-    printf "\nВсего QUIC стратегий: %s\n" "$total_quic"
-    printf "Текущая стратегия: #%s\n\n" "$current_quic"
+    printf "\nTotal QUIC strategies: %s\n" "$total_quic"
+    printf "Current strategy: #%s\n\n" "$current_quic"
 
-    printf "Введите номер стратегии [1-%s] или Enter для отмены: " "$total_quic"
+    printf "Enter strategy number [1-%s] or Enter to cancel:" "$total_quic"
     read_input new_strategy
 
     if [ -z "$new_strategy" ]; then
-        print_info "Отменено"
+        print_info "Cancelled"
         pause
         return 0
     fi
 
     if ! echo "$new_strategy" | grep -qE '^[0-9]+$'; then
-        print_error "Неверный формат"
+        print_error "Invalid format"
         pause
         return 1
     fi
 
     if [ "$new_strategy" -lt 1 ] || [ "$new_strategy" -gt "$total_quic" ]; then
-        print_error "Номер вне диапазона"
+        print_error "Number out of range"
         pause
         return 1
     fi
 
     if ! quic_strategy_exists "$new_strategy"; then
-        print_error "QUIC стратегия #$new_strategy не найдена"
+        print_error "QUIC strategy #$new_strategy not found"
         pause
         return 1
     fi
 
     set_rutracker_quic_strategy "$new_strategy"
 
-    # Получить текущие стратегии
+    # Get current strategies
     local config_file="${CONFIG_DIR}/category_strategies.conf"
     local current_yt_tcp=1
     local current_yt_gv=1
@@ -1644,13 +1644,13 @@ menu_select_quic_strategy_rutracker() {
     fi
 
     apply_category_strategies_v2 "$current_yt_tcp" "$current_yt_gv" "$current_rkn"
-    print_success "RuTracker QUIC стратегия #$new_strategy применена"
+    print_success "RuTracker QUIC strategy #$new_strategy applied"
     pause
 }
 
 
 # ==============================================================================
-# ЭКСПОРТ ФУНКЦИЙ
+# EXPORTING FUNCTIONS
 # ==============================================================================
 
-# Все функции доступны после source этого файла
+# All functions are available after the source of this file
